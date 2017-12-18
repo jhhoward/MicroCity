@@ -123,8 +123,8 @@ Building* GetBuilding(uint8_t x, uint8_t y)
 		if(building->type)
 		{
 			const BuildingInfo* metadata = GetBuildingInfo(building->type);
-			uint8_t width = pgm_read_byte(&otherMetadata->width);
-			uint8_t height = pgm_read_byte(&otherMetadata->height);
+			uint8_t width = pgm_read_byte(&metadata->width);
+			uint8_t height = pgm_read_byte(&metadata->height);
 			
 			if(x >= building->x && x < building->x + width && y >= building->y && y < building->y + height)
 			{

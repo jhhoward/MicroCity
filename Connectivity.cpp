@@ -3,6 +3,16 @@
 #include "Building.h"
 
 void PowerFloodFill(uint8_t x, uint8_t y);
+uint8_t* GetPowerGrid();
+
+// A 1 bit per tile representation of which tiles are powered
+inline uint8_t* GetPowerGrid()
+{
+	// TODO: if arduboy then reuse the screen buffer memory
+	static uint8_t PowerGrid[MAP_WIDTH * MAP_HEIGHT / 8];
+
+	return PowerGrid;
+}
 
 uint8_t GetConnections(int x, int y)
 {
@@ -53,14 +63,11 @@ int GetConnectivityTileVariant(int x, int y, uint8_t mask)
 	return variant;
 }
 
-// A 1 bit per tile representation of which tiles are powered
-uint8_t PowerGrid[MAP_WIDTH * MAP_HEIGHT / 8];
-
 bool IsTilePowered(uint8_t x, uint8_t y)
 {
 	int index = y * MAP_WIDTH + x;
 	int mask = 1 << (index & 7);
-	uint8_t val = PowerGrid[index >> 3];
+	uint8_t val = GetPowerGrid()[index >> 3];
 	
 	return (val & mask) != 0;
 }
@@ -69,7 +76,7 @@ void SetTilePowered(uint8_t x, uint8_t y)
 {
 	int index = y * MAP_WIDTH + x;
 	int mask = 1 << (index & 7);
-	PowerGrid[index >> 3] |= mask;
+	GetPowerGrid()[index >> 3] |= mask;
 }
 
 void CalculatePowerConnectivity()
@@ -77,7 +84,7 @@ void CalculatePowerConnectivity()
 	// Clear power from grid
 	for(int n = 0; n < MAP_WIDTH * MAP_HEIGHT / 8; n++)
 	{
-		PowerGrid[n] = 0;
+		GetPowerGrid()[n] = 0;
 	}
 
 	// Flood fill from power plants

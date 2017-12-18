@@ -1,5 +1,6 @@
 #include "Game.h"
 #include "Draw.h"
+#include "Interface.h"
 
 const uint8_t TileImageData[] PROGMEM = { 0 };
 
@@ -216,6 +217,49 @@ void ScrollRight(int amount)
 	}
 }
 
+void DrawCursor()
+{
+	uint8_t cursorX, cursorY;
+	int cursorWidth = TILE_SIZE, cursorHeight = TILE_SIZE;
+	
+	if(UIState.brush >= FirstBuildingBrush)
+	{
+		BuildingType buildingType = (BuildingType)(UIState.brush - FirstBuildingBrush);
+		GetBuildingBrushLocation(buildingType, &cursorX, &cursorY);
+		const BuildingInfo* buildingInfo = GetBuildingInfo(UIState.brush - FirstBuildingBrush);
+		cursorWidth *= pgm_read_byte(&buildingInfo->width);
+		cursorHeight *= pgm_read_byte(&buildingInfo->height);
+	}
+	else
+	{
+		cursorX = UIState.selectX;
+		cursorY = UIState.selectY;
+	}
+
+	int cursorDrawX, cursorDrawY;
+	cursorDrawX = (cursorX * 8) - UIState.scrollX;
+	cursorDrawY = (cursorY * 8) - UIState.scrollY;
+	
+	if(cursorDrawX >= 0 && cursorDrawY >= 0 && cursorDrawX + cursorWidth < DISPLAY_WIDTH && cursorDrawY + cursorHeight < DISPLAY_HEIGHT)
+	{
+		static uint8_t cursorAnimation = 0;
+		cursorAnimation++;
+		
+		for(int n = 0; n < cursorWidth; n++)
+		{
+			uint8_t colour = ((n + cursorAnimation) & 4) != 0 ? 1 : 0;
+			PutPixel(cursorX + n, cursorY, colour);
+			PutPixel(cursorX + cursorWidth - n - 1, cursorY + cursorHeight - 1, colour);
+		}
+
+		for(int n = 0; n < cursorHeight; n++)
+		{
+			uint8_t colour = ((n + cursorAnimation) & 4) != 0 ? 1 : 0;
+			PutPixel(cursorX, cursorY + n, colour);
+			PutPixel(cursorX + cursorWidth - 1, cursorY + cursorHeight - n - 1, colour);
+		}
+	}
+}
 
 void Draw()
 {
