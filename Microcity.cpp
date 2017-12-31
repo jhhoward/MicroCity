@@ -1,3 +1,4 @@
+#ifdef _WIN32
 #include "Defines.h"
 #include "Game.cpp"
 #include "Terrain.cpp"
@@ -16,3 +17,4 @@ int main()
 	printf("Game state: %d bytes\n", (int)sizeof(GameState));
 	return 0; 
 }
+#endif

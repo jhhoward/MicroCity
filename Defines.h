@@ -6,6 +6,9 @@
 #define pgm_read_byte(x) (*((uint8_t*)x))
 #define pgm_read_word(x) (*((uint16_t*)x))
 #define pgm_read_ptr(x) (*((uintptr_t*)x))
+#else
+#include <avr/pgmspace.h>
+#define pgm_read_ptr pgm_read_word
 #endif
 
 #define TILE_SIZE 8
@@ -23,14 +26,34 @@
 #define VISIBLE_TILES_X ((DISPLAY_WIDTH / TILE_SIZE) + 1)
 #define VISIBLE_TILES_Y ((DISPLAY_HEIGHT / TILE_SIZE) + 1)
 
-#define MAX_BUILDINGS 128
+#define MAX_BUILDINGS 100
 
 // How long a button has to be held before the first event repeats
 #define INPUT_REPEAT_TIME 10
 
 // When repeating, how long between each event is fired
-#define INPUT_REPEAT_FREQUENCY 4
+#define INPUT_REPEAT_FREQUENCY 2
 
 #define BULLDOZER_COST 1
-#define ROAD_COST 1
-#define POWERLINE_COST 1
+#define ROAD_COST 10
+#define POWERLINE_COST 5
+
+#define FIRST_TERRAIN_TILE 1
+#define FIRST_WATER_TILE 17
+#define LAST_WATER_TILE (FIRST_WATER_TILE + 3)
+
+#define FIRST_ROAD_TILE 5
+#define FIRST_ROAD_TRAFFIC_TILE (FIRST_ROAD_TILE + 16)
+#define LAST_ROAD_TRAFFIC_TILE (FIRST_ROAD_TRAFFIC_TILE + 10)
+#define FIRST_POWERLINE_TILE 53
+#define FIRST_POWERLINE_ROAD_TILE 49
+
+#define FIRST_BUILDING_TILE 224
+
+#define POWERCUT_TILE 48
+
+#define FIRST_BRUSH_TILE 240
+
+#define NUM_TOOLBAR_BUTTONS 13
+
+#define MAX_POPULATION_DENSITY 15

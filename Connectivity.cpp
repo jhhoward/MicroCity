@@ -5,6 +5,7 @@
 void PowerFloodFill(uint8_t x, uint8_t y);
 uint8_t* GetPowerGrid();
 
+#ifdef _WIN32
 // A 1 bit per tile representation of which tiles are powered
 inline uint8_t* GetPowerGrid()
 {
@@ -13,6 +14,7 @@ inline uint8_t* GetPowerGrid()
 
 	return PowerGrid;
 }
+#endif
 
 uint8_t GetConnections(int x, int y)
 {
@@ -34,33 +36,40 @@ void SetConnections(int x, int y, uint8_t newVal)
 		int index = y * MAP_WIDTH + x;
 		int shift = 2 * (index & 3);
 
-		State.connectionMap[index >> 2] |= (newVal << shift);
+    index >>= 2;
+    uint8_t oldVal = State.connectionMap[index] & (~(3 << shift));
+		State.connectionMap[index] = oldVal | (newVal << shift);
 	}
 }
+
+const uint8_t TileVariants[] PROGMEM =
+{
+  0, 1, 0, 5, 1, 1, 2, 9, 0, 4, 0, 8, 3, 7, 6, 10
+};
 
 // Based on neighbouring tile types, get which visual tile to use
 int GetConnectivityTileVariant(int x, int y, uint8_t mask)
 {
 	int variant = 0;
 	
-	if(y > 0 && GetConnections(x, y - 1) & mask)
+	if(y > 0 && (GetConnections(x, y - 1) & mask))
 	{
 		variant |= 1;
 	}
-	if(x < MAP_WIDTH - 1 && GetConnections(x + 1, y) & mask)
+	if(x < MAP_WIDTH - 1 && (GetConnections(x + 1, y) & mask))
 	{
 		variant |= 2;
 	}
-	if(y < MAP_HEIGHT - 1 && GetConnections(x, y + 1) & mask)
+	if(y < MAP_HEIGHT - 1 && (GetConnections(x, y + 1) & mask))
 	{
 		variant |= 4;
 	}
-	if(x > 0 && GetConnections(x - 1, y) & mask)
+	if(x > 0 && (GetConnections(x - 1, y) & mask))
 	{
 		variant |= 8;
 	}
 	
-	return variant;
+	return pgm_read_byte(&TileVariants[variant]);
 }
 
 bool IsTilePowered(uint8_t x, uint8_t y)

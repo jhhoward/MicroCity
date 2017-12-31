@@ -24,3 +24,6 @@ typedef struct
 
 extern GameState State;
 
+uint16_t GetRandFromSeed(uint16_t randVal);
+uint16_t GetRand();
+

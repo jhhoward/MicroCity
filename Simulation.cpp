@@ -10,6 +10,25 @@ enum SimulationSteps
 
 void SimulateBuilding(Building* building)
 {
+  if(building->type)
+  {
+    if(building->hasPower)
+    {
+      if(building->populationDensity < MAX_POPULATION_DENSITY)
+      {
+        building->populationDensity++;
+      }
+      building->heavyTraffic = building->populationDensity > MAX_POPULATION_DENSITY / 2;
+    }
+    else
+    {
+      building->heavyTraffic = false;
+      if(building->populationDensity > 0)
+      {
+        building->populationDensity --;
+      }
+    }
+  }
 	// TODO
 }
 

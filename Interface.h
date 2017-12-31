@@ -16,7 +16,7 @@ enum BrushTypes
 	RoadBrush,
 	PowerlineBrush,
 	FirstBuildingBrush,
-	LastBuildingBrush = FirstBuildingBrush + Num_BuildingTypes - 1
+	LastBuildingBrush = FirstBuildingBrush + Num_BuildingTypes - 2
 };
 
 typedef struct
@@ -24,6 +24,8 @@ typedef struct
 	int16_t scrollX, scrollY;		// Where on the map (in pixels) display is scrolled to
 	uint8_t selectX, selectY;		// Which tile is selected
 	uint8_t brush;					// What will be placed 
+  uint8_t toolbarSelection;   // For when toolbar is open
+  bool showingToolbar : 1;    // Whether showing the bottom toolbar for selecting brush
 } UIStateStruct;
 
 extern UIStateStruct UIState;
@@ -31,5 +33,8 @@ extern UIStateStruct UIState;
 uint8_t GetInput();
 
 void ProcessInput(void);
+void UpdateInterface(void);
 
 void GetBuildingBrushLocation(BuildingType buildingType, uint8_t* outX, uint8_t* outY);
+
+

@@ -12,3 +12,4 @@ uint8_t GetConnections(int x, int y);
 void SetConnections(int x, int y, uint8_t newVal);
 void CalculatePowerConnectivity(void);
 int GetConnectivityTileVariant(int x, int y, uint8_t mask);
+uint8_t* GetPowerGrid();

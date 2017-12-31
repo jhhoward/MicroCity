@@ -5,19 +5,23 @@
 const BuildingInfo BuildingMetaData[] PROGMEM =
 {
 	// None,
-	{ 0, 0, 0 },
-	// Powerplant,
-	{ 1000, 4, 4 },
+	{ 0, 0, 0, 0 },
 	// Residential,
-	{ 100, 3, 3 },
+	{ 100, 3, 3, 64 },
 	// Commercial,
-	{ 100, 3, 3 },
+	{ 100, 3, 3, 67 },
 	// Industrial,
-	{ 100, 3, 3 },
+	{ 100, 3, 3, 70 },
+  // Powerplant,
+  { 3000, 4, 4, 160 },
+  // Park,
+  { 50, 3, 3, 73 },
 	// PoliceDept,
-	{ 250, 3, 3 },
+	{ 500, 3, 3, 76 },
 	// FireDept,
-	{ 250, 3, 3 },
+	{ 500, 3, 3, 124 },
+  // Stadium,
+  { 3000, 4, 4, 164 },
 };
 
 const BuildingInfo* GetBuildingInfo(uint8_t buildingType)
@@ -55,12 +59,13 @@ bool PlaceBuilding(uint8_t buildingType, uint8_t x, uint8_t y)
 	const BuildingInfo* metadata = GetBuildingInfo(buildingType);
 	uint8_t width = pgm_read_byte(&metadata->width);
 	uint8_t height = pgm_read_byte(&metadata->height);
+  uint8_t connectionMask = buildingType == Park ? 0 : PowerlineMask;
 
 	for(int i = x; i < x + width; i++)
 	{
 		for(int j = y; j < y + height; j++)
 		{
-			SetConnections(i, j, PowerlineMask);
+			SetConnections(i, j, connectionMask);
 		}
 	}
 	
@@ -81,12 +86,12 @@ bool CanPlaceBuilding(uint8_t buildingType, uint8_t x, uint8_t y)
 	
 	// TODO: check terrain
 	
-	// Check if trying to build on top of road or powerlines
+	// Check if trying to build on top of road
 	for(int i = x; i < x + width; i++)
 	{
 		for(int j = y; j < y + height; j++)
 		{
-			if(GetConnections(i, j) != 0)
+			if(GetConnections(i, j) & RoadMask)
 				return false;
 		}
 	}
@@ -133,5 +138,5 @@ Building* GetBuilding(uint8_t x, uint8_t y)
 		}
 	}
 	
-	return NULL;
+	return nullptr;
 }
