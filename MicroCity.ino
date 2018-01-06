@@ -1,4 +1,5 @@
 #include <Arduboy2.h>
+#include <EEPROM.h>
 #include "Draw.h"
 #include "Interface.h"
 #include "Game.h"
@@ -53,6 +54,47 @@ void DrawRect(uint8_t x, uint8_t y, uint8_t w, uint8_t h, uint8_t colour)
   arduboy.drawRect(x, y, w, h, colour);
 }
 
+void DrawBitmap(const uint8_t* bmp, uint8_t x, uint8_t y, uint8_t w, uint8_t h)
+{
+  arduboy.drawBitmap(x, y, bmp, w, h, WHITE);
+}
+
+void SaveCity()
+{
+  uint16_t address = EEPROM_STORAGE_SPACE_START;
+
+  // Add a header so we know that the EEPROM contains a saved city
+  EEPROM.update(address++, 'C'); 
+  EEPROM.update(address++, 'I'); 
+  EEPROM.update(address++, 'T'); 
+  EEPROM.update(address++, 'Y'); 
+
+  uint8_t* ptr = (uint8_t*) &State;
+  for(size_t n = 0; n < sizeof(GameState); n++)
+  {
+    EEPROM.update(address++, *ptr);
+    ptr++;
+  }
+}
+
+bool LoadCity()
+{
+  uint16_t address = EEPROM_STORAGE_SPACE_START;
+
+  if(EEPROM.read(address++) != 'C') return false;
+  if(EEPROM.read(address++) != 'I') return false;
+  if(EEPROM.read(address++) != 'T') return false;
+  if(EEPROM.read(address++) != 'Y') return false;
+
+  uint8_t* ptr = (uint8_t*) &State;
+  for(size_t n = 0; n < sizeof(GameState); n++)
+  {
+    *ptr = EEPROM.read(address++);
+    ptr++;
+  }
+
+  return true;
+}
 
 uint8_t* GetPowerGrid()
 {
@@ -63,30 +105,15 @@ void setup()
 {
   arduboy.begin();
   arduboy.setFrameRate(30);
-  ResetVisibleTileCache();
-  UIState.brush = RoadBrush; //FirstBuildingBrush + 1;
-  State.money = 5000000;
+
+  InitGame();
 }
 
 void loop()
 {
   if(arduboy.nextFrame())
   {
-    Simulate();
-    ProcessInput();
-    UpdateInterface();
-    
-    Draw();
-    
-    /*static int y = 0;
-    for(int n = 0; n < 128; n++)
-    {
-      PutPixel(n, y, WHITE);
-    }
-    y++;
-    if(y >= 64) y = 0;
-    */
-    
+    TickGame();
     arduboy.display(false);
   }
 }

@@ -1,10 +1,12 @@
 #include "Game.h"
 #include "Connectivity.h"
+#include "Draw.h"
 
 enum SimulationSteps
 {
 	SimulateBuildings = 0,
 	SimulatePower = MAX_BUILDINGS,
+  SimulateRefreshTiles,
 	SimulateNextMonth
 };
 
@@ -43,6 +45,9 @@ void Simulate()
 		case SimulatePower:
 		CalculatePowerConnectivity();
 		break;
+    case SimulateRefreshTiles:
+    ResetVisibleTileCache();
+    break;
 		case SimulateNextMonth:
 		{
 			State.simulationStep = 0;

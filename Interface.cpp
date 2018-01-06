@@ -67,36 +67,132 @@ void GetBuildingBrushLocation(BuildingType buildingType, uint8_t* outX, uint8_t*
 	}
 }
 
+void WrapMenuInput(uint8_t input, uint8_t numOptions)
+{
+    if(input & INPUT_UP)
+    {
+      if(UIState.selection > 0)
+        UIState.selection--;
+      else UIState.selection = numOptions - 1;
+    }
+    if(input & INPUT_DOWN)
+    {
+      if(UIState.selection == numOptions - 1)
+        UIState.selection = 0;
+      else UIState.selection++;
+    } 
+}
+
 void HandleInput(uint8_t input)
 {
-  if(UIState.showingToolbar)
+  if(UIState.state == ShowingToolbar)
   {
     if(input & INPUT_LEFT)
     {
-      if(UIState.toolbarSelection == 0)
+      if(UIState.selection == 0)
       {
-        UIState.toolbarSelection = NUM_TOOLBAR_BUTTONS - 1;
+        UIState.selection = NUM_TOOLBAR_BUTTONS - 1;
       }
-      else UIState.toolbarSelection --;
+      else UIState.selection --;
     }
     if(input & INPUT_RIGHT)
     {
-      if(UIState.toolbarSelection == NUM_TOOLBAR_BUTTONS - 1)
+      if(UIState.selection == NUM_TOOLBAR_BUTTONS - 1)
       {
-        UIState.toolbarSelection = 0;
+        UIState.selection = 0;
       }
-      else UIState.toolbarSelection++;
+      else UIState.selection++;
     }
     if(input & (INPUT_A | INPUT_B))
     {
-      UIState.showingToolbar = false;
-      if(UIState.toolbarSelection <= LastBuildingBrush)
+      if(UIState.selection <= LastBuildingBrush)
       {
-        UIState.brush = UIState.toolbarSelection;
+        UIState.brush = UIState.selection;
+        UIState.state = InGame;
+      }
+      else if(UIState.selection == SaveLoadToolbarButton)
+      {
+        UIState.state = SaveLoadMenu;
+        UIState.selection = 0;
+      }      
+    }
+  }
+  else if(UIState.state == StartScreen)
+  {
+    WrapMenuInput(input, 2);
+    if(input & (INPUT_B))
+    {
+      switch(UIState.selection)
+      {
+        case 0:
+        UIState.state = NewCityMenu;
+        break;
+        case 1:
+        if(LoadCity())
+        {
+          UIState.state = InGame;
+          ResetVisibleTileCache();
+        }
+        break;
       }
     }
   }
-  else
+  else if(UIState.state == NewCityMenu)
+  {
+    if(input & INPUT_LEFT)
+    {
+      if(State.terrainType == 0)
+      {
+        State.terrainType = NUM_TERRAIN_TYPES - 1;
+      }
+      else State.terrainType --;
+    }
+    if(input & INPUT_RIGHT)
+    {
+      if(State.terrainType == NUM_TERRAIN_TYPES - 1)
+      {
+        State.terrainType = 0;
+      }
+      else State.terrainType++;
+    }
+    if(input & (INPUT_B))
+    {
+      uint8_t terrainType = State.terrainType;
+      InitGame();
+      State.terrainType = terrainType;
+      ResetVisibleTileCache();
+      UIState.state = InGame;
+    }
+  }
+  else if(UIState.state == SaveLoadMenu)
+  {
+    WrapMenuInput(input, 3);
+    if(input & (INPUT_A))
+    {
+      UIState.state = InGame;
+    }
+    if(input & INPUT_B)
+    {
+      switch(UIState.selection)
+      {
+        case 0:
+        SaveCity();
+        UIState.state = InGame;
+        break;
+        case 1:
+        if(LoadCity())
+        {
+          UIState.state = InGame;
+          ResetVisibleTileCache();
+        }
+        break;
+        case 2:
+        UIState.state = NewCityMenu;
+        break;
+      }
+    }
+  }
+  else if(UIState.state == InGame)
   {
   	if((input & INPUT_LEFT) && UIState.selectX > 0)
   	{
@@ -117,8 +213,8 @@ void HandleInput(uint8_t input)
   
     if(input & INPUT_A)
     {
-      UIState.showingToolbar = true;
-      UIState.toolbarSelection = UIState.brush;
+      UIState.state = ShowingToolbar;
+      UIState.selection = UIState.brush;
     }
   	
   	if(input & INPUT_B)
@@ -188,7 +284,7 @@ void HandleInput(uint8_t input)
   			{
   				// TODO: can't build here
   			}
-  			else
+  			else if(IsTerrainClear(UIState.selectX, UIState.selectY))
   			{
   				int cost = UIState.brush == RoadBrush ? ROAD_COST : POWERLINE_COST;
   				uint8_t mask = UIState.brush == RoadBrush ? RoadMask : PowerlineMask;

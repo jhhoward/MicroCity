@@ -8,7 +8,7 @@
 #define pgm_read_ptr(x) (*((uintptr_t*)x))
 #else
 #include <avr/pgmspace.h>
-#define pgm_read_ptr pgm_read_word
+//#define pgm_read_ptr pgm_read_word
 #endif
 
 #define TILE_SIZE 8
@@ -57,3 +57,5 @@
 #define NUM_TOOLBAR_BUTTONS 13
 
 #define MAX_POPULATION_DENSITY 15
+
+#define NUM_TERRAIN_TYPES 3

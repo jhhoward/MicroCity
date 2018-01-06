@@ -7,9 +7,9 @@
 const uint8_t TileImageData[] PROGMEM = 
 { 
   #include "TileData.h"
-//  0, 0, 0, 0, 0, 0, 0, 0,
-//  0xaa, 0x55, 0xaa, 0x55, 0xaa, 0x55, 0xaa, 0x55, 
 };
+
+#include "LogoBitmap.h"
 
 // Currently visible tiles are cached so they don't need to be recalculated between frames
 uint8_t VisibleTileCache[VISIBLE_TILES_X * VISIBLE_TILES_Y];
@@ -67,6 +67,7 @@ uint8_t CalculateTile(int x, int y)
       uint8_t tile = pgm_read_byte(&info->drawTile);
 			if(x < building->x + width && y < building->y + height)
 			{
+        // Industrial, commercial and residential buildings have different tiles based on the population density
         if(building->type == Industrial || building->type == Commercial || building->type == Residential)
         {
           if(building->populationDensity >= MAX_POPULATION_DENSITY - 1)
@@ -75,7 +76,11 @@ uint8_t CalculateTile(int x, int y)
           }
           else if(x != building->x + 1 || y != building->y + 1)
           {
-            uint16_t density = GetRandFromSeed(y * MAP_WIDTH + x);
+            uint16_t procVal = GetRandFromSeed(n + y * MAP_WIDTH + x + 1 + MAP_WIDTH * MAP_HEIGHT);
+            if((procVal & 0xF) < (building->populationDensity << 1))
+            {
+              return FIRST_BUILDING_TILE + ((procVal >> 8) & 7);
+            }
           }
         }
       
@@ -382,6 +387,15 @@ void AnimatePowercuts()
         {
           const BuildingInfo* info = GetBuildingInfo(building->type);
           uint8_t tile = pgm_read_byte(&info->drawTile);
+
+          if(building->type == Industrial || building->type == Commercial || building->type == Residential)
+          {
+            if(building->populationDensity >= MAX_POPULATION_DENSITY - 1)
+            {
+              tile += 48;
+            }
+          }
+                 
           VisibleTileCache[screenY * VISIBLE_TILES_X + screenX] = tile + 17;
         }
       } 
@@ -435,7 +449,7 @@ void DrawRect(uint8_t x, uint8_t y, uint8_t w, uint8_t h, uint8_t colour)
 
 void DrawUI()
 {
-  if(UIState.showingToolbar)
+  if(UIState.state == ShowingToolbar)
   {
     uint8_t buttonX = 1;
 
@@ -448,20 +462,20 @@ void DrawUI()
       buttonX += TILE_SIZE + 1;    
     }
 
-    DrawCursorRect(UIState.toolbarSelection * (TILE_SIZE + 1), DISPLAY_HEIGHT - TILE_SIZE - 2, TILE_SIZE + 2, TILE_SIZE + 2);
-    const char* currentSelection = GetToolbarString(UIState.toolbarSelection);
+    DrawCursorRect(UIState.selection * (TILE_SIZE + 1), DISPLAY_HEIGHT - TILE_SIZE - 2, TILE_SIZE + 2, TILE_SIZE + 2);
+    const char* currentSelection = GetToolbarString(UIState.selection);
     DrawString(currentSelection, 1, DISPLAY_HEIGHT - FONT_HEIGHT - TILE_SIZE - 2);
 
     uint16_t cost = 0;
     
-    switch(UIState.toolbarSelection)
+    switch(UIState.selection)
     {
       case 0: cost = BULLDOZER_COST; break;
       case 1: cost = ROAD_COST; break;
       case 2: cost = POWERLINE_COST; break;
       default:
       {
-        int buildingIndex = 1 + UIState.toolbarSelection - FirstBuildingBrush;
+        int buildingIndex = 1 + UIState.selection - FirstBuildingBrush;
         if(buildingIndex < Num_BuildingTypes)
         {
           const BuildingInfo* buildingInfo = GetBuildingInfo(buildingIndex);
@@ -494,7 +508,7 @@ void DrawUI()
   DrawRect(DISPLAY_WIDTH - 2 - currencyStrLen * FONT_WIDTH, 0, currencyStrLen * FONT_WIDTH + 2, FONT_HEIGHT + 2, 1);
 }
 
-void Draw()
+void DrawInGame()
 {
 	// Check to see if scrolled to a new location and need to update the visible tile cache
 	int tileScrollX = UIState.scrollX >> TILE_SIZE_SHIFT;
@@ -552,12 +566,100 @@ void Draw()
 
 	DrawTiles();
 
-  if(!UIState.showingToolbar)
+  if(UIState.state == InGame)
   {
     DrawCursor();
   }
 
   DrawUI();
-
-  AnimationFrame++;
 }
+
+const char SaveCityStr[] PROGMEM = "Save City";
+const char LoadCityStr[] PROGMEM = "Load City";
+const char NewCityStr[] PROGMEM = "New City";
+
+void DrawSaveLoadMenu()
+{
+  const int menuWidth = 60;
+  const int menuHeight = 44;
+  const int spacing = 12;
+  DrawRect(DISPLAY_WIDTH / 2 - menuWidth / 2 + 1, DISPLAY_HEIGHT / 2 - menuHeight / 2 + 1, menuWidth, menuHeight, 0);
+  DrawFilledRect(DISPLAY_WIDTH / 2 - menuWidth / 2, DISPLAY_HEIGHT / 2 - menuHeight / 2, menuWidth, menuHeight, 1);
+  DrawRect(DISPLAY_WIDTH / 2 - menuWidth / 2, DISPLAY_HEIGHT / 2 - menuHeight / 2, menuWidth, menuHeight, 0);
+
+  uint8_t y = DISPLAY_HEIGHT / 2 - 16;
+  uint8_t x = DISPLAY_WIDTH / 2 - FONT_WIDTH * 5;
+
+  uint8_t cursorRectY = y + spacing * UIState.selection - 2;
+  DrawCursorRect(x - 2, cursorRectY, FONT_WIDTH * 10 + 4, FONT_HEIGHT + 4);
+
+  DrawString(SaveCityStr, x, y);
+  y += spacing;
+  DrawString(LoadCityStr, x, y);
+  y += spacing;
+  DrawString(NewCityStr, x, y);
+}
+
+void DrawStartScreen()
+{
+  const uint8_t logoWidth = 72;
+  const uint8_t logoHeight = 40;
+  const uint8_t logoY = 4;
+  const int spacing = 12;
+  
+  DrawFilledRect(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT, 1);
+  DrawFilledRect(DISPLAY_WIDTH / 2 - logoWidth / 2, logoY, logoWidth, logoHeight, 0);
+  DrawBitmap(LogoBitmap, DISPLAY_WIDTH / 2 - logoWidth / 2, logoY, logoWidth, logoHeight);
+
+  uint8_t y = logoY + logoHeight;
+  uint8_t x = DISPLAY_WIDTH / 2 - FONT_WIDTH * 5;
+
+  uint8_t cursorRectY = y + spacing * UIState.selection - 2;
+  DrawCursorRect(x - 2, cursorRectY, FONT_WIDTH * 10 + 4, FONT_HEIGHT + 4);
+
+  DrawString(NewCityStr, x, y);
+  y += spacing;
+  DrawString(LoadCityStr, x, y);
+
+}
+
+const char LeftArrowStr[] PROGMEM = "<";
+const char RightArrowStr[] PROGMEM = ">";
+
+void DrawNewCityMenu()
+{
+  const uint8_t mapY = DISPLAY_HEIGHT / 2 - MAP_HEIGHT / 2 - 4;
+  DrawFilledRect(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT, 1);
+
+  DrawFilledRect(DISPLAY_WIDTH / 2 - MAP_WIDTH / 2, mapY, MAP_WIDTH, MAP_HEIGHT, 0);
+  DrawBitmap(GetTerrainData(State.terrainType), DISPLAY_WIDTH / 2 - MAP_WIDTH / 2, mapY, MAP_WIDTH, MAP_HEIGHT);
+  DrawRect(DISPLAY_WIDTH / 2 - MAP_WIDTH / 2 - 2, mapY - 2, MAP_WIDTH + 4, MAP_HEIGHT + 4, 0);
+
+  DrawString(GetTerrainDescription(State.terrainType), DISPLAY_WIDTH / 2 - FONT_WIDTH * 3, mapY + MAP_HEIGHT + 5);
+  DrawString(LeftArrowStr, DISPLAY_WIDTH / 2 - MAP_WIDTH / 2 - 6 - FONT_WIDTH, DISPLAY_HEIGHT / 2 - FONT_HEIGHT / 2);
+  DrawString(RightArrowStr, DISPLAY_WIDTH / 2 + MAP_WIDTH / 2 + 6, DISPLAY_HEIGHT / 2 - FONT_HEIGHT / 2);
+}
+
+void Draw()
+{
+  switch(UIState.state)
+  {
+    case StartScreen:
+    DrawStartScreen();
+    break;
+    case NewCityMenu:
+    DrawNewCityMenu();
+    break;
+    case InGame:
+    case ShowingToolbar:
+    DrawInGame();
+    break;
+    case SaveLoadMenu:
+    DrawSaveLoadMenu();
+    break;
+  }
+  
+  AnimationFrame++;
+  
+}
+

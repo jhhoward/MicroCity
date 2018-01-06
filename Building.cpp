@@ -83,14 +83,16 @@ bool CanPlaceBuilding(uint8_t buildingType, uint8_t x, uint8_t y)
 		return false;
 	if(y + height > MAP_HEIGHT)
 		return false;
-	
-	// TODO: check terrain
-	
+		
 	// Check if trying to build on top of road
 	for(int i = x; i < x + width; i++)
 	{
 		for(int j = y; j < y + height; j++)
 		{
+      // Check terrain is not water
+      if(IsTerrainClear(i, j) == false)
+        return false;
+
 			if(GetConnections(i, j) & RoadMask)
 				return false;
 		}

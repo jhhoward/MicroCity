@@ -17,7 +17,7 @@ typedef struct
 	// 2 bits per tile : road and power line
 	uint8_t connectionMap[MAP_WIDTH * MAP_HEIGHT / 4];
 	
-	uint8_t terrain[MAP_TERRAIN_BLOCKS_WIDTH * MAP_TERRAIN_BLOCKS_HEIGHT];
+	uint8_t terrainType;
 	
 	Building buildings[MAX_BUILDINGS];
 } GameState;
@@ -26,4 +26,10 @@ extern GameState State;
 
 uint16_t GetRandFromSeed(uint16_t randVal);
 uint16_t GetRand();
+
+void InitGame(void);
+void TickGame(void);
+
+void SaveCity(void);
+bool LoadCity(void);
 
