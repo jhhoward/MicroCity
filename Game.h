@@ -20,6 +20,12 @@ typedef struct
 	uint8_t terrainType;
 	
 	Building buildings[MAX_BUILDINGS];
+
+  uint8_t taxRate;
+
+  uint16_t residentialPopulation;
+  uint16_t industrialPopulation;
+  uint16_t commercialPopulation;
 } GameState;
 
 extern GameState State;

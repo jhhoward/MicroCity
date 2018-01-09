@@ -32,6 +32,8 @@ void InitGame()
     *ptr = 0;
     ptr++;
   }
+
+  State.taxRate = STARTING_TAX_RATE;
   
   ResetVisibleTileCache();
   UIState.brush = RoadBrush; //FirstBuildingBrush + 1;
