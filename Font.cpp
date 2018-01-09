@@ -2,7 +2,7 @@
 // https://hackaday.io/project/6309-vga-graphics-over-spi-and-serial-vgatonic/log/20759-a-tiny-4x6-pixel-font-that-will-fit-on-almost-any-microcontroller-license-mit
 
 #include <stdint.h>
-#include <avr/pgmspace.h>
+#include "Defines.h"
 #include "Font.h"
 #include "Draw.h"
 
@@ -110,7 +110,7 @@ const uint8_t font4x6 [96][2] PROGMEM = {
 unsigned char getFontLine(unsigned char data, int line_num) {
   const uint8_t index = (data-32);
   unsigned char pixel = 0;
-  if (pgm_read_byte(&font4x6[index][1]) & 1 == 1) line_num -= 1;
+  if ((pgm_read_byte(&font4x6[index][1]) & 1) == 1) line_num -= 1;
   if (line_num == 0) {
       pixel = (pgm_read_byte(&font4x6[index][0])) >> 4;
   } else if (line_num == 1) {

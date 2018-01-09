@@ -1,11 +1,14 @@
 #pragma once
 
 #if _WIN32
+#include <stdint.h>
+#include <string.h>
 #define PROGMEM
 #define PSTR
 #define pgm_read_byte(x) (*((uint8_t*)x))
 #define pgm_read_word(x) (*((uint16_t*)x))
 #define pgm_read_ptr(x) (*((uintptr_t*)x))
+#define strlen_P(x) strlen(x)
 #else
 #include <avr/pgmspace.h>
 //#define pgm_read_ptr pgm_read_word
@@ -14,8 +17,13 @@
 #define TILE_SIZE 8
 #define TILE_SIZE_SHIFT 3
 
+#ifdef _WIN32
+#define DISPLAY_WIDTH 192
+#define DISPLAY_HEIGHT 192
+#else
 #define DISPLAY_WIDTH 128
 #define DISPLAY_HEIGHT 64
+#endif
 
 #define MAP_WIDTH 48
 #define MAP_HEIGHT 48

@@ -604,7 +604,7 @@ void DrawStartScreen()
 {
   const uint8_t logoWidth = 72;
   const uint8_t logoHeight = 40;
-  const uint8_t logoY = 4;
+  const uint8_t logoY = DISPLAY_HEIGHT / 2 - 28;
   const int spacing = 12;
   
   DrawFilledRect(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT, 1);
