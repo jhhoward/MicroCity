@@ -18,58 +18,72 @@ inline uint8_t* GetPowerGrid()
 
 uint8_t GetConnections(int x, int y)
 {
-	if(x >= 0 && x < MAP_WIDTH && y >= 0 && y < MAP_HEIGHT)
+	if (x >= 0 && x < MAP_WIDTH && y >= 0 && y < MAP_HEIGHT)
 	{
 		int index = y * MAP_WIDTH + x;
 		uint8_t mapVal = State.connectionMap[index >> 2];
 		int shift = 2 * (index & 3);
 		return (mapVal >> shift) & 3;
 	}
-	
+
 	return 0;
 }
 
 void SetConnections(int x, int y, uint8_t newVal)
 {
-	if(x >= 0 && x < MAP_WIDTH && y >= 0 && y < MAP_HEIGHT)
+	if (x >= 0 && x < MAP_WIDTH && y >= 0 && y < MAP_HEIGHT)
 	{
 		int index = y * MAP_WIDTH + x;
 		int shift = 2 * (index & 3);
 
-    index >>= 2;
-    uint8_t oldVal = State.connectionMap[index] & (~(3 << shift));
+		index >>= 2;
+		uint8_t oldVal = State.connectionMap[index] & (~(3 << shift));
 		State.connectionMap[index] = oldVal | (newVal << shift);
 	}
 }
 
 const uint8_t TileVariants[] PROGMEM =
 {
-  0, 1, 0, 5, 1, 1, 2, 9, 0, 4, 0, 8, 3, 7, 6, 10
+	0, 1, 0, 5, 1, 1, 2, 9, 0, 4, 0, 8, 3, 7, 6, 10
 };
+
+// Returns a 4 bit mask based on neighbouring connectivity
+uint8_t GetNeighbouringConnectivity(int x, int y, uint8_t mask)
+{
+	uint8_t neighbourMask = 0;
+
+	if (y > 0 && (GetConnections(x, y - 1) & mask))
+	{
+		neighbourMask |= 1;
+	}
+	if (x < MAP_WIDTH - 1 && (GetConnections(x + 1, y) & mask))
+	{
+		neighbourMask |= 2;
+	}
+	if (y < MAP_HEIGHT - 1 && (GetConnections(x, y + 1) & mask))
+	{
+		neighbourMask |= 4;
+	}
+	if (x > 0 && (GetConnections(x - 1, y) & mask))
+	{
+		neighbourMask |= 8;
+	}
+
+	return neighbourMask;
+}
+
+bool IsSuitableForBridgedTile(int x, int y, uint8_t mask)
+{
+	uint8_t neighbours = GetNeighbouringConnectivity(x, y, mask);
+	return neighbours == 1 || neighbours == 2 || neighbours == 4 || neighbours == 5 || neighbours == 8 || neighbours == 10;
+}
 
 // Based on neighbouring tile types, get which visual tile to use
 int GetConnectivityTileVariant(int x, int y, uint8_t mask)
 {
-	int variant = 0;
-	
-	if(y > 0 && (GetConnections(x, y - 1) & mask))
-	{
-		variant |= 1;
-	}
-	if(x < MAP_WIDTH - 1 && (GetConnections(x + 1, y) & mask))
-	{
-		variant |= 2;
-	}
-	if(y < MAP_HEIGHT - 1 && (GetConnections(x, y + 1) & mask))
-	{
-		variant |= 4;
-	}
-	if(x > 0 && (GetConnections(x - 1, y) & mask))
-	{
-		variant |= 8;
-	}
-	
-	return pgm_read_byte(&TileVariants[variant]);
+	uint8_t neighbours = GetNeighbouringConnectivity(x, y, mask);
+
+	return pgm_read_byte(&TileVariants[neighbours]);
 }
 
 bool IsTilePowered(uint8_t x, uint8_t y)
@@ -77,7 +91,7 @@ bool IsTilePowered(uint8_t x, uint8_t y)
 	int index = y * MAP_WIDTH + x;
 	int mask = 1 << (index & 7);
 	uint8_t val = GetPowerGrid()[index >> 3];
-	
+
 	return (val & mask) != 0;
 }
 
@@ -91,24 +105,24 @@ void SetTilePowered(uint8_t x, uint8_t y)
 void CalculatePowerConnectivity()
 {
 	// Clear power from grid
-	for(int n = 0; n < MAP_WIDTH * MAP_HEIGHT / 8; n++)
+	for (int n = 0; n < MAP_WIDTH * MAP_HEIGHT / 8; n++)
 	{
 		GetPowerGrid()[n] = 0;
 	}
 
 	// Flood fill from power plants
-	for(int n = 0; n < MAX_BUILDINGS; n++)
+	for (int n = 0; n < MAX_BUILDINGS; n++)
 	{
-		if(State.buildings[n].type == Powerplant)
+		if (State.buildings[n].type == Powerplant)
 		{
 			PowerFloodFill(State.buildings[n].x, State.buildings[n].y);
 		}
 	}
-	
+
 	// Set powered flags on buildings
-	for(int n = 0; n < MAX_BUILDINGS; n++)
+	for (int n = 0; n < MAX_BUILDINGS; n++)
 	{
-		if(State.buildings[n].type)
+		if (State.buildings[n].type)
 		{
 			State.buildings[n].hasPower = IsTilePowered(State.buildings[n].x, State.buildings[n].y);
 		}
@@ -137,39 +151,39 @@ bool IsFillEmpty(uint8_t x, uint8_t y)
 uint8_t GetFilledNeighbourCount(uint8_t x, uint8_t y)
 {
 	uint8_t count = 0;
-	
-	if(x == 0 || !IsFillEmpty(x - 1, y))
+
+	if (x == 0 || !IsFillEmpty(x - 1, y))
 		count++;
-	if(x == MAP_WIDTH - 1 || !IsFillEmpty(x + 1, y))
+	if (x == MAP_WIDTH - 1 || !IsFillEmpty(x + 1, y))
 		count++;
-	if(y == 0 || !IsFillEmpty(x, y - 1))
+	if (y == 0 || !IsFillEmpty(x, y - 1))
 		count++;
-	if(y == MAP_HEIGHT - 1 || !IsFillEmpty(x, y + 1))
+	if (y == MAP_HEIGHT - 1 || !IsFillEmpty(x, y + 1))
 		count++;
-	
+
 	return count;
 }
 
 bool IsFilledInDir(uint8_t x, uint8_t y, uint8_t dir)
 {
-	switch(dir)
+	switch (dir)
 	{
-		default:
-		case FILL_NORTH:
+	default:
+	case FILL_NORTH:
 		return y > 0 ? !IsFillEmpty(x, y - 1) : true;
-		case FILL_NORTHEAST:
+	case FILL_NORTHEAST:
 		return y > 0 && x < MAP_WIDTH - 1 ? !IsFillEmpty(x + 1, y - 1) : true;
-		case FILL_EAST:
+	case FILL_EAST:
 		return x < MAP_WIDTH - 1 ? !IsFillEmpty(x + 1, y) : true;
-		case FILL_SOUTHEAST:
+	case FILL_SOUTHEAST:
 		return x < MAP_WIDTH - 1 && y < MAP_HEIGHT - 1 ? !IsFillEmpty(x + 1, y + 1) : true;
-		case FILL_SOUTH:
+	case FILL_SOUTH:
 		return y < MAP_HEIGHT - 1 ? !IsFillEmpty(x, y + 1) : true;
-		case FILL_SOUTHWEST:
+	case FILL_SOUTHWEST:
 		return x > 0 && y < MAP_HEIGHT - 1 ? !IsFillEmpty(x - 1, y + 1) : true;
-		case FILL_WEST:
+	case FILL_WEST:
 		return x > 0 ? !IsFillEmpty(x - 1, y) : true;
-		case FILL_NORTHWEST:
+	case FILL_NORTHWEST:
 		return x > 0 && y > 0 ? !IsFillEmpty(x - 1, y - 1) : true;
 	}
 }
@@ -201,18 +215,18 @@ uint8_t FillTurnAround(uint8_t dir)
 
 void FillMoveForward(uint8_t* x, uint8_t* y, uint8_t dir)
 {
-	switch(dir)
+	switch (dir)
 	{
-		case FILL_NORTH:
+	case FILL_NORTH:
 		--(*y);
 		break;
-		case FILL_EAST:
+	case FILL_EAST:
 		++(*x);
 		break;
-		case FILL_SOUTH:
+	case FILL_SOUTH:
 		++(*y);
 		break;
-		case FILL_WEST:
+	case FILL_WEST:
 		--(*x);
 		break;
 	}
@@ -226,155 +240,153 @@ void PowerFloodFill(uint8_t x, uint8_t y)
 	bool mark1Set = false, mark2Set = false;
 	bool backtrack = false;
 	bool findloop = false;
-	
+
 	// Move to edge
-	while(y > 0 && IsFillEmpty(x, y - 1))
+	while (y > 0 && IsFillEmpty(x, y - 1))
 	{
 		y--;
 	}
-	
+
 	goto Fill_Start;
-	
-	while(1)
+
+	while (1)
 	{
 		FillMoveForward(&x, &y, fillDir);
-		
+
 		// If right pixel is empty
-		if(IsFilledInDir(x, y, FillTurnRight(fillDir)) == false)
+		if (IsFilledInDir(x, y, FillTurnRight(fillDir)) == false)
 		{
-			if(backtrack && !findloop &&
-			(IsFilledInDir(x, y, fillDir) == false 
-			|| IsFilledInDir(x, y, FillTurnLeft(fillDir)) == false))
+			if (backtrack && !findloop &&
+				(IsFilledInDir(x, y, fillDir) == false
+					|| IsFilledInDir(x, y, FillTurnLeft(fillDir)) == false))
 			{
 				findloop = true;
 			}
-			
+
 			// Turn right
 			fillDir = FillTurnRight(fillDir);
 
-	Fill_Paint:
-			
+		Fill_Paint:
+
 			FillMoveForward(&x, &y, fillDir);
 		}
-		
+
 	Fill_Start:
 		uint8_t filledNeighbourCount = GetFilledNeighbourCount(x, y);
-		if(filledNeighbourCount == 4)
+		if (filledNeighbourCount == 4)
 		{
 			SetTilePowered(x, y);
 			break;
 		}
-		
+
 		do
 		{
 			fillDir = FillTurnRight(fillDir);
-		}
-		while(IsFilledInDir(x, y, fillDir) == false);
+		} while (IsFilledInDir(x, y, fillDir) == false);
 		do
 		{
 			fillDir = FillTurnLeft(fillDir);
-		}
-		while(IsFilledInDir(x, y, fillDir) != false);
-		
-		switch(filledNeighbourCount)
+		} while (IsFilledInDir(x, y, fillDir) != false);
+
+		switch (filledNeighbourCount)
 		{
-			case 1:
-				if(backtrack)
-				{
-					findloop = true;
-				}
-				else if(findloop)
-				{
-					mark1Set = true;
-				}
-				else if(IsFilledInDir(x, y, FillFrontLeft(fillDir)) == false
+		case 1:
+			if (backtrack)
+			{
+				findloop = true;
+			}
+			else if (findloop)
+			{
+				mark1Set = true;
+			}
+			else if (IsFilledInDir(x, y, FillFrontLeft(fillDir)) == false
 				&& IsFilledInDir(x, y, FillBackLeft(fillDir)) == false)
+			{
+				mark1Set = false;
+				SetTilePowered(x, y);
+				goto Fill_Paint;
+			}
+			break;
+		case 2:
+			if (IsFilledInDir(x, y, FillTurnAround(fillDir)) != false)
+			{
+				if (IsFilledInDir(x, y, FillFrontLeft(fillDir)) == false)
 				{
 					mark1Set = false;
 					SetTilePowered(x, y);
 					goto Fill_Paint;
 				}
-			break;
-			case 2:
-				if(IsFilledInDir(x, y, FillTurnAround(fillDir)) != false)
+			}
+			else if (!mark1Set)
+			{
+				mark1X = x;
+				mark1Y = y;
+				mark1Set = true;
+				mark1Dir = fillDir;
+				mark2Set = false;
+				findloop = false;
+				backtrack = false;
+			}
+			else
+			{
+				if (!mark2Set)
 				{
-					if(IsFilledInDir(x, y, FillFrontLeft(fillDir)) == false)
+					if (mark1Set && x == mark1X && y == mark1Y)
 					{
-						mark1Set = false;
-						SetTilePowered(x, y);
-						goto Fill_Paint;
-					}
-				}
-				else if(!mark1Set)
-				{
-					mark1X = x;
-					mark1Y = y;
-					mark1Set = true;
-					mark1Dir = fillDir;
-					mark2Set = false;
-					findloop = false;
-					backtrack = false;
-				}
-				else
-				{
-					if(!mark2Set)
-					{
-						if(mark1Set && x == mark1X && y == mark1Y)
+						if (fillDir == mark1Dir)
 						{
-							if(fillDir == mark1Dir)
-							{
-								mark1Set = false;
-								fillDir = FillTurnAround(fillDir);
-								SetTilePowered(x, y);
-								goto Fill_Paint;
-							}
-							else
-							{
-								backtrack = true;
-								findloop = false;
-								fillDir = mark1Dir;
-							}
-						}
-						else if(findloop)
-						{
-							mark2X = x;
-							mark2Y = y;
-							mark2Dir = fillDir;
-							mark2Set = true;
-						}
-					}
-					else
-					{
-						if(mark1Set && x == mark1X && y == mark1Y)
-						{
-							x = mark2X;
-							y = mark2Y;
-							fillDir = mark2Dir;
 							mark1Set = false;
-							mark2Set = false;
-							backtrack = false;
 							fillDir = FillTurnAround(fillDir);
 							SetTilePowered(x, y);
 							goto Fill_Paint;
 						}
-						else if(mark2Set && x == mark2X && y == mark2Y)
+						else
 						{
-							mark1X = x;
-							mark1Y = y;
-							mark1Set = true;
-							fillDir = mark2Dir;
-							mark1Dir = mark2Dir;
-							mark2Set = false;
+							backtrack = true;
+							findloop = false;
+							fillDir = mark1Dir;
 						}
 					}
+					else if (findloop)
+					{
+						mark2X = x;
+						mark2Y = y;
+						mark2Dir = fillDir;
+						mark2Set = true;
+					}
 				}
+				else
+				{
+					if (mark1Set && x == mark1X && y == mark1Y)
+					{
+						x = mark2X;
+						y = mark2Y;
+						fillDir = mark2Dir;
+						mark1Set = false;
+						mark2Set = false;
+						backtrack = false;
+						fillDir = FillTurnAround(fillDir);
+						SetTilePowered(x, y);
+						goto Fill_Paint;
+					}
+					else if (mark2Set && x == mark2X && y == mark2Y)
+					{
+						mark1X = x;
+						mark1Y = y;
+						mark1Set = true;
+						fillDir = mark2Dir;
+						mark1Dir = mark2Dir;
+						mark2Set = false;
+					}
+				}
+			}
 			break;
-			case 3:
-				mark1Set = false;
-				SetTilePowered(x, y);
-				goto Fill_Paint;
+		case 3:
+			mark1Set = false;
+			SetTilePowered(x, y);
+			goto Fill_Paint;
 			break;
-			default:
+		default:
 			break;
 		}
 	}

@@ -12,16 +12,16 @@ const BuildingInfo BuildingMetaData[] PROGMEM =
 	{ 100, 3, 3, 67 },
 	// Industrial,
 	{ 100, 3, 3, 70 },
-  // Powerplant,
-  { 3000, 4, 4, 160 },
-  // Park,
-  { 50, 3, 3, 73 },
+	// Powerplant,
+	{ 3000, 4, 4, 160 },
+	// Park,
+	{ 50, 3, 3, 73 },
 	// PoliceDept,
 	{ 500, 3, 3, 76 },
 	// FireDept,
 	{ 500, 3, 3, 124 },
-  // Stadium,
-  { 3000, 4, 4, 164 },
+	// Stadium,
+	{ 3000, 4, 4, 164 },
 };
 
 const BuildingInfo* GetBuildingInfo(uint8_t buildingType)
@@ -32,21 +32,21 @@ const BuildingInfo* GetBuildingInfo(uint8_t buildingType)
 bool PlaceBuilding(uint8_t buildingType, uint8_t x, uint8_t y)
 {
 	int index = 0;
-	
-	while(index < MAX_BUILDINGS)
+
+	while (index < MAX_BUILDINGS)
 	{
-		if(State.buildings[index].type == 0)
+		if (State.buildings[index].type == 0)
 		{
 			break;
 		}
 		index++;
 	}
-	
-	if(index == MAX_BUILDINGS)
+
+	if (index == MAX_BUILDINGS)
 	{
 		return false;
 	}
-	
+
 	Building* newBuilding = &State.buildings[index];
 	newBuilding->type = buildingType;
 	newBuilding->x = x;
@@ -54,22 +54,22 @@ bool PlaceBuilding(uint8_t buildingType, uint8_t x, uint8_t y)
 	newBuilding->populationDensity = 0;
 	newBuilding->hasPower = false;
 	newBuilding->flags = 0;
-	
+
 	// Internally building space is represented as power lines to correctly flood fill etc
 	const BuildingInfo* metadata = GetBuildingInfo(buildingType);
 	uint8_t width = pgm_read_byte(&metadata->width);
 	uint8_t height = pgm_read_byte(&metadata->height);
-  uint8_t connectionMask = buildingType == Park ? 0 : PowerlineMask;
+	uint8_t connectionMask = buildingType == Park ? 0 : PowerlineMask;
 
-	for(int i = x; i < x + width; i++)
+	for (int i = x; i < x + width; i++)
 	{
-		for(int j = y; j < y + height; j++)
+		for (int j = y; j < y + height; j++)
 		{
 			SetConnections(i, j, connectionMask);
 		}
 	}
-	
-	
+
+
 	return true;
 }
 
@@ -78,67 +78,67 @@ bool CanPlaceBuilding(uint8_t buildingType, uint8_t x, uint8_t y)
 	const BuildingInfo* metadata = GetBuildingInfo(buildingType);
 	uint8_t width = pgm_read_byte(&metadata->width);
 	uint8_t height = pgm_read_byte(&metadata->height);
-	
-	if(x + width > MAP_WIDTH)
-		return false;
-	if(y + height > MAP_HEIGHT)
-		return false;
-		
-	// Check if trying to build on top of road
-	for(int i = x; i < x + width; i++)
-	{
-		for(int j = y; j < y + height; j++)
-		{
-      // Check terrain is not water
-      if(IsTerrainClear(i, j) == false)
-        return false;
 
-			if(GetConnections(i, j) & RoadMask)
+	if (x + width > MAP_WIDTH)
+		return false;
+	if (y + height > MAP_HEIGHT)
+		return false;
+
+	// Check if trying to build on top of road
+	for (int i = x; i < x + width; i++)
+	{
+		for (int j = y; j < y + height; j++)
+		{
+			// Check terrain is not water
+			if (IsTerrainClear(i, j) == false)
+				return false;
+
+			if (GetConnections(i, j) & RoadMask)
 				return false;
 		}
 	}
-	
+
 	// Check building overlaps
-	for(int n = 0; n < MAX_BUILDINGS; n++)
+	for (int n = 0; n < MAX_BUILDINGS; n++)
 	{
 		Building* building = &State.buildings[n];
-		
-		if(building->type)
+
+		if (building->type)
 		{
 			const BuildingInfo* otherMetadata = GetBuildingInfo(building->type);
 			uint8_t otherWidth = pgm_read_byte(&otherMetadata->width);
 			uint8_t otherHeight = pgm_read_byte(&otherMetadata->height);
-			
-			if(x + width > building->x && x < building->x + otherWidth
-			&& y + height > building->y && y < building->y + otherHeight)
+
+			if (x + width > building->x && x < building->x + otherWidth
+				&& y + height > building->y && y < building->y + otherHeight)
 			{
 				return false;
 			}
 		}
-		
+
 	}
-	
+
 	return true;
 }
 
 Building* GetBuilding(uint8_t x, uint8_t y)
 {
-	for(int n = 0; n < MAX_BUILDINGS; n++)
+	for (int n = 0; n < MAX_BUILDINGS; n++)
 	{
 		Building* building = &State.buildings[n];
-		
-		if(building->type)
+
+		if (building->type)
 		{
 			const BuildingInfo* metadata = GetBuildingInfo(building->type);
 			uint8_t width = pgm_read_byte(&metadata->width);
 			uint8_t height = pgm_read_byte(&metadata->height);
-			
-			if(x >= building->x && x < building->x + width && y >= building->y && y < building->y + height)
+
+			if (x >= building->x && x < building->x + width && y >= building->y && y < building->y + height)
 			{
 				return building;
 			}
 		}
 	}
-	
+
 	return nullptr;
 }

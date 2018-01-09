@@ -33,8 +33,8 @@ KeyMap KeyMappings[] =
 void SaveCity()
 {
 	FILE* fs;
-	
-	if(fopen_s(&fs, SAVEGAME_NAME, "wb") == 0)
+
+	if (fopen_s(&fs, SAVEGAME_NAME, "wb") == 0)
 	{
 		fwrite(&State, sizeof(GameState), 1, fs);
 		fflush(fs);
@@ -59,9 +59,9 @@ bool LoadCity()
 void PutPixel(uint8_t x, uint8_t y, uint8_t colour)
 {
 	SDL_Surface* surface = ScreenSurface;
-	
+
 	Uint32 col = colour ? SDL_MapRGBA(surface->format, 255, 255, 255, 255) : SDL_MapRGBA(surface->format, 0, 0, 0, 255);
-	
+
 	int bpp = surface->format->BytesPerPixel;
 	Uint8 *p = (Uint8 *)surface->pixels + y * surface->pitch + x * bpp;
 
@@ -70,9 +70,9 @@ void PutPixel(uint8_t x, uint8_t y, uint8_t colour)
 
 void DrawBitmap(const uint8_t* data, uint8_t x, uint8_t y, uint8_t w, uint8_t h)
 {
-	for(int j = 0; j < h; j++)
+	for (int j = 0; j < h; j++)
 	{
-		for(int i = 0; i < w; i++)
+		for (int i = 0; i < w; i++)
 		{
 			int blockX = i / 8;
 			int blockY = j / 8;
@@ -80,7 +80,7 @@ void DrawBitmap(const uint8_t* data, uint8_t x, uint8_t y, uint8_t w, uint8_t h)
 			int blockIndex = blockY * blocksPerWidth + blockX;
 			uint8_t pixels = data[blockIndex * 8 + i % 8];
 			uint8_t mask = 1 << (j % 8);
-			if(pixels & mask)
+			if (pixels & mask)
 			{
 				PutPixel(x + i, y + j, 1);
 			}
@@ -120,30 +120,30 @@ int main(int argc, char* argv[])
 				running = false;
 				break;
 			case SDL_KEYDOWN:
-				for(int n = 0; n < sizeof(KeyMappings); n++)
+				for (int n = 0; n < sizeof(KeyMappings); n++)
 				{
-					if(event.key.keysym.sym == KeyMappings[n].key)
+					if (event.key.keysym.sym == KeyMappings[n].key)
 					{
 						InputMask |= KeyMappings[n].mask;
 					}
 				}
-				switch(event.key.keysym.sym)
+				switch (event.key.keysym.sym)
 				{
-					case SDLK_F1:
+				case SDLK_F1:
 					SaveCity();
 					break;
-					case SDLK_F2:
+				case SDLK_F2:
 					LoadCity();
 					break;
-					case SDLK_ESCAPE:
+				case SDLK_ESCAPE:
 					running = false;
 					break;
 				}
 				break;
 			case SDL_KEYUP:
-				for(int n = 0; n < sizeof(KeyMappings); n++)
+				for (int n = 0; n < sizeof(KeyMappings); n++)
 				{
-					if(event.key.keysym.sym == KeyMappings[n].key)
+					if (event.key.keysym.sym == KeyMappings[n].key)
 					{
 						InputMask &= ~KeyMappings[n].mask;
 					}
@@ -168,7 +168,7 @@ int main(int argc, char* argv[])
 		dest.h = DISPLAY_HEIGHT;
 		SDL_RenderCopy(AppRenderer, ScreenTexture, &src, &dest);
 		SDL_RenderPresent(AppRenderer);
-		
+
 		SDL_Delay(1000 / 30);
 	}
 

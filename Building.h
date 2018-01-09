@@ -8,11 +8,11 @@ enum BuildingType
 	Residential,
 	Commercial,
 	Industrial,
-  Powerplant,
-  Park,
+	Powerplant,
+	Park,
 	PoliceDept,
 	FireDept,
-  Stadium,
+	Stadium,
 	Num_BuildingTypes
 };
 
@@ -23,7 +23,7 @@ typedef struct
 	uint8_t type : 4;
 	uint8_t populationDensity : 4;
 	uint8_t flags : 2;
-  bool heavyTraffic : 1;
+	bool heavyTraffic : 1;
 	bool hasPower : 1;
 } Building;
 
@@ -32,7 +32,7 @@ typedef struct
 	uint16_t cost;
 	uint8_t width;
 	uint8_t height;
-  uint8_t drawTile;
+	uint8_t drawTile;
 } BuildingInfo;
 
 bool PlaceBuilding(uint8_t buildingType, uint8_t x, uint8_t y);

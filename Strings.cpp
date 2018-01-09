@@ -16,24 +16,24 @@ const char BudgetStr[] PROGMEM = "Budget";
 
 const char* const ToolbarStrings[] PROGMEM =
 {
-  BulldozerStr,
-  RoadStr,
-  PowerlineStr,
-  ResidentialStr,
-  CommericalStr,
-  IndustrialStr,
-  PowerplantStr,
-  ParkStr,
-  PoliceDeptStr,
-  FireDeptStr,
-  StadiumStr,
-  SaveLoadStr,
-  BudgetStr,
+	BulldozerStr,
+	RoadStr,
+	PowerlineStr,
+	ResidentialStr,
+	CommericalStr,
+	IndustrialStr,
+	PowerplantStr,
+	ParkStr,
+	PoliceDeptStr,
+	FireDeptStr,
+	StadiumStr,
+	SaveLoadStr,
+	BudgetStr,
 };
 
 const char* GetToolbarString(int index)
 {
-  return (const char*) pgm_read_ptr(&ToolbarStrings[index]);
+	return (const char*)pgm_read_ptr(&ToolbarStrings[index]);
 }
 
 const char JanStr[] PROGMEM = "Jan";
@@ -49,8 +49,8 @@ const char OctStr[] PROGMEM = "Oct";
 const char NovStr[] PROGMEM = "Nov";
 const char DecStr[] PROGMEM = "Dec";
 
-const char* const MonthStrings[] PROGMEM = 
-{	
+const char* const MonthStrings[] PROGMEM =
+{
 	JanStr,
 	FebStr,
 	MarStr,
@@ -67,7 +67,7 @@ const char* const MonthStrings[] PROGMEM =
 
 const char* GetMonthString(int index)
 {
-	return (const char*) pgm_read_ptr(&MonthStrings[index]);
+	return (const char*)pgm_read_ptr(&MonthStrings[index]);
 }
 
 
