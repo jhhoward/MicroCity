@@ -6,6 +6,7 @@ enum SimulationSteps
 {
 	SimulateBuildings = 0,
 	SimulatePower = MAX_BUILDINGS,
+  SimulatePopulation,
   SimulateRefreshTiles,
 	SimulateNextMonth
 };
@@ -34,6 +35,20 @@ void SimulateBuilding(Building* building)
 	// TODO
 }
 
+void CountPopulation()
+{
+  State.residentialPopulation = State.industrialPopulation = State.commercialPopulation = 0;
+
+  for(int n = 0; n < MAX_BUILDINGS; n++)
+  {
+    switch(State.buildings[n].type)
+    {
+      default:
+      break;
+    }
+  }
+}
+
 void Simulate()
 {
 	if(State.simulationStep < MAX_BUILDINGS)
@@ -47,6 +62,9 @@ void Simulate()
 		break;
     case SimulateRefreshTiles:
     ResetVisibleTileCache();
+    break;
+    case SimulatePopulation:
+    CountPopulation();
     break;
 		case SimulateNextMonth:
 		{
