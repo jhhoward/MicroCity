@@ -47,6 +47,14 @@ const uint8_t TileVariants[] PROGMEM =
 	0, 1, 0, 5, 1, 1, 2, 9, 0, 4, 0, 8, 3, 7, 6, 10
 };
 
+enum
+{
+	Neighbour_North = 1,
+	Neighbour_East = 2,
+	Neighbour_South = 4,
+	Neighbour_West = 8
+};
+
 // Returns a 4 bit mask based on neighbouring connectivity
 uint8_t GetNeighbouringConnectivity(int x, int y, uint8_t mask)
 {
@@ -54,19 +62,19 @@ uint8_t GetNeighbouringConnectivity(int x, int y, uint8_t mask)
 
 	if (y > 0 && (GetConnections(x, y - 1) & mask))
 	{
-		neighbourMask |= 1;
+		neighbourMask |= Neighbour_North;
 	}
 	if (x < MAP_WIDTH - 1 && (GetConnections(x + 1, y) & mask))
 	{
-		neighbourMask |= 2;
+		neighbourMask |= Neighbour_East;
 	}
 	if (y < MAP_HEIGHT - 1 && (GetConnections(x, y + 1) & mask))
 	{
-		neighbourMask |= 4;
+		neighbourMask |= Neighbour_South;
 	}
 	if (x > 0 && (GetConnections(x - 1, y) & mask))
 	{
-		neighbourMask |= 8;
+		neighbourMask |= Neighbour_West;
 	}
 
 	return neighbourMask;
@@ -75,7 +83,35 @@ uint8_t GetNeighbouringConnectivity(int x, int y, uint8_t mask)
 bool IsSuitableForBridgedTile(int x, int y, uint8_t mask)
 {
 	uint8_t neighbours = GetNeighbouringConnectivity(x, y, mask);
-	return neighbours == 1 || neighbours == 2 || neighbours == 4 || neighbours == 5 || neighbours == 8 || neighbours == 10;
+	
+	if(neighbours == Neighbour_North || neighbours == Neighbour_East || neighbours == Neighbour_South || neighbours == Neighbour_West
+	|| neighbours == (Neighbour_North | Neighbour_South) || neighbours == (Neighbour_East | Neighbour_West))
+	{
+		if(neighbours & Neighbour_North)
+		{
+			if(!IsTerrainClear(x, y - 1) && (GetNeighbouringConnectivity(x, y - 1, mask) & (Neighbour_East | Neighbour_West)))
+				return false;
+		}
+		if(neighbours & Neighbour_East)
+		{
+			if(!IsTerrainClear(x + 1, y) && (GetNeighbouringConnectivity(x + 1, y, mask) & (Neighbour_North | Neighbour_South)))
+				return false;
+		}
+		if(neighbours & Neighbour_South)
+		{
+			if(!IsTerrainClear(x, y + 1) && (GetNeighbouringConnectivity(x, y + 1, mask) & (Neighbour_East | Neighbour_West)))
+				return false;
+		}
+		if(neighbours & Neighbour_West)
+		{
+			if(!IsTerrainClear(x - 1, y) && (GetNeighbouringConnectivity(x - 1, y, mask) & (Neighbour_North | Neighbour_South)))
+				return false;
+		}
+		
+		return true;
+	}
+	
+	return false;
 }
 
 // Based on neighbouring tile types, get which visual tile to use

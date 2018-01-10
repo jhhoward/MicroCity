@@ -107,6 +107,8 @@ int main(int argc, char* argv[])
 	);
 	ScreenTexture = SDL_CreateTexture(AppRenderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING, ScreenSurface->w, ScreenSurface->h);
 
+	InitGame();
+	
 	bool running = true;
 
 	while (running)

@@ -11,20 +11,26 @@ enum SimulationSteps
 	SimulateNextMonth
 };
 
+#define SIM_INCREMENT_POP_THRESHOLD 20				// Score must be more than this to grow
+#define SIM_DECREMENT_POP_THRESHOLD -30				// Score must be less than this to shrink
+
 #define AVERAGE_POPULATION_DENSITY 8
-#define SIM_AVERAGING_STRENGTH 1
-#define SIM_INCREMENT_POP_THRESHOLD 20
-#define SIM_DECREMENT_POP_THRESHOLD -20
+#define SIM_AVERAGING_STRENGTH 0
 #define SIM_EMPLOYMENT_BOOST 10
-#define SIM_UNEMPLOYMENT_PENALTY 10
+#define SIM_UNEMPLOYMENT_PENALTY 100
 #define SIM_INDUSTRIAL_OPPORTUNITY_BOOST 10
 #define SIM_COMMERCIAL_OPPORTUNITY_BOOST 10
 #define SIM_LOCAL_BUILDING_DISTANCE 20
-#define SIM_LOCAL_BUILDING_INFLUENCE 10
-#define SIM_STADIUM_BOOST 10
+#define SIM_LOCAL_BUILDING_INFLUENCE 5
+#define SIM_STADIUM_BOOST 100
 #define SIM_PARK_BOOST 10
 #define SIM_MAX_CRIME 50
 #define SIM_RANDOM_STRENGTH_MASK 31
+#define SIM_POLLUTION_INFLUENCE 1
+#define SIM_INDUSTRIAL_BASE_POLLUTION 8
+#define SIM_TRAFFIC_BASE_POLLUTION 8
+#define SIM_POWERPLANT_BASE_POLLUTION 32
+#define SIM_HEAVY_TRAFFIC_THRESHOLD 12
 
 uint8_t GetNumRoadConnections(Building* building)
 {
@@ -106,7 +112,7 @@ void SimulateBuilding(Building* building)
 				{
 					score += SIM_EMPLOYMENT_BOOST;
 				}
-				if(State.residentialPopulation > State.industrialPopulation + State.commercialPopulation)
+				else if(State.residentialPopulation > State.industrialPopulation + State.commercialPopulation)
 				{
 					score -= SIM_UNEMPLOYMENT_PENALTY;
 				}
@@ -129,6 +135,7 @@ void SimulateBuilding(Building* building)
 			bool isRoadConnected = GetNumRoadConnections(building) >= 3;
 			
 			uint8_t closestPoliceStationDistance = 255;
+			int16_t pollution = 0;
 			
 			// influence from local buildings
 			if(isRoadConnected)
@@ -145,6 +152,24 @@ void SimulateBuilding(Building* building)
 						{
 							closestPoliceStationDistance = distance;
 						}
+						
+						int buildingPollution = 0;
+						
+						if(otherBuilding->type == Industrial)
+						{
+							buildingPollution = SIM_INDUSTRIAL_BASE_POLLUTION + otherBuilding->populationDensity - distance;
+						}
+						else if(otherBuilding->type == Powerplant)
+						{
+							buildingPollution = SIM_POWERPLANT_BASE_POLLUTION - distance;
+						}
+						else if(otherBuilding->heavyTraffic)
+						{
+							buildingPollution = SIM_TRAFFIC_BASE_POLLUTION - distance;
+						}
+						
+						if(buildingPollution > 0)
+							pollution += buildingPollution;
 						
 						if(distance <= SIM_LOCAL_BUILDING_DISTANCE && GetNumRoadConnections(otherBuilding) >= 3)
 						{
@@ -188,6 +213,10 @@ void SimulateBuilding(Building* building)
 				}
 			}
 			
+			// negative effect from pollution
+			if(building->type != Industrial)
+				score -= pollution * SIM_POLLUTION_INFLUENCE;
+			
 			// simulate crime based on how far the closest police station is and how populated the area is
 			int crime = (building->populationDensity * (closestPoliceStationDistance - 8));
 			if(crime > SIM_MAX_CRIME)
@@ -209,7 +238,7 @@ void SimulateBuilding(Building* building)
 				building->populationDensity--;
 			}
 			
-			building->heavyTraffic = building->populationDensity > MAX_POPULATION_DENSITY / 2;
+			building->heavyTraffic = building->populationDensity > SIM_HEAVY_TRAFFIC_THRESHOLD;
 		}
 		else
 		{
