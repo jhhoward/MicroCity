@@ -115,6 +115,11 @@ void HandleInput(uint8_t input)
 				UIState.state = SaveLoadMenu;
 				UIState.selection = 0;
 			}
+			else if (UIState.selection == BudgetToolbarButton)
+			{
+				UIState.state = BudgetMenu;
+				UIState.selection = MIN_BUDGET_DISPLAY_TIME;
+			}
 		}
 	}
 	else if (UIState.state == StartScreen)
@@ -343,6 +348,25 @@ void HandleInput(uint8_t input)
 				{
 					// TODO: cannot place here, e.g. obstructed
 				}
+			}
+		}
+	}
+	else if (UIState.state == BudgetMenu)
+	{
+		// Display for a minimum of a few frames to prevent closing the budget menu by accident
+		if (UIState.selection >= MIN_BUDGET_DISPLAY_TIME)
+		{
+			if ((input & INPUT_LEFT) && State.taxRate > 0)
+			{
+				State.taxRate--;
+			}
+			if ((input & INPUT_RIGHT) && State.taxRate < 99)
+			{
+				State.taxRate++;
+			}
+			if (input & (INPUT_A | INPUT_B))
+			{
+				UIState.state = InGame;
 			}
 		}
 	}

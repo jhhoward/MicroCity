@@ -1,6 +1,7 @@
 #include "Game.h"
 #include "Connectivity.h"
 #include "Draw.h"
+#include "Interface.h"
 
 enum SimulationSteps
 {
@@ -32,6 +33,8 @@ enum SimulationSteps
 #define SIM_TRAFFIC_BASE_POLLUTION 8
 #define SIM_POWERPLANT_BASE_POLLUTION 32
 #define SIM_HEAVY_TRAFFIC_THRESHOLD 12
+#define SIM_IDEAL_TAX_RATE 6
+#define SIM_TAX_RATE_PENALTY 10
 
 uint8_t GetNumRoadConnections(Building* building)
 {
@@ -94,10 +97,10 @@ uint8_t GetManhattanDistance(Building* a, Building* b)
 void DoBudget()
 {
 	// Collect taxes
-	int totalPopulation = (State.residentialPopulation + State.commercialPopulation + State.residentialPopulation) * POPULATION_MULTIPLIER;
-	int taxesCollected = (totalPopulation * State.taxRate) / 100;
+	int32_t totalPopulation = (State.residentialPopulation + State.commercialPopulation + State.residentialPopulation) * POPULATION_MULTIPLIER;
+	State.taxesCollected = (totalPopulation * State.taxRate) / 100;
 
-	State.money += taxesCollected;
+	State.money += State.taxesCollected;
 
 	// Count police and fire departments for costing
 	uint8_t numPoliceDept = 0;
@@ -115,6 +118,9 @@ void DoBudget()
 		}
 	}
 
+	State.fireBudget = numFireDept;
+	State.policeBudget = numPoliceDept;
+
 	State.money -= FIRE_AND_POLICE_MAINTENANCE_COST * numFireDept;
 	State.money -= FIRE_AND_POLICE_MAINTENANCE_COST * numPoliceDept;
 
@@ -129,18 +135,20 @@ void DoBudget()
 		}
 	}
 
-	int roadCost = (numRoadTiles * ROAD_MAINTENANCE_COST) / 100;
-	State.money -= roadCost;
+	State.roadBudget = (numRoadTiles * ROAD_MAINTENANCE_COST) / 100;
+	State.money -= State.roadBudget;
 
 #ifdef _WIN32
 	printf("Budget for %d:\n", State.year + 1899);
 	printf("Population: %d\n", totalPopulation);
-	printf("Taxes collected: $%d\n", taxesCollected);
+	printf("Taxes collected: $%d\n", State.taxesCollected);
 	printf("Police cost: %d x $%d = $%d\n", numPoliceDept, FIRE_AND_POLICE_MAINTENANCE_COST, FIRE_AND_POLICE_MAINTENANCE_COST * numPoliceDept);
 	printf("Fire cost: %d x $%d = $%d\n", numFireDept, FIRE_AND_POLICE_MAINTENANCE_COST, FIRE_AND_POLICE_MAINTENANCE_COST * numFireDept);
-	printf("Road maintenance: %d tiles = $%d\n", numRoadTiles, roadCost);
+	printf("Road maintenance: %d tiles = $%d\n", numRoadTiles, State.roadBudget);
 #endif
 
+	UIState.state = BudgetMenu;
+	UIState.selection = 0;
 }
 
 void SimulateBuilding(Building* building)
@@ -159,6 +167,9 @@ void SimulateBuilding(Building* building)
 			// tend towards average population density
 			score += (AVERAGE_POPULATION_DENSITY - building->populationDensity) * SIM_AVERAGING_STRENGTH;
 			
+			// tax rate effect
+			score -= (State.taxRate - SIM_IDEAL_TAX_RATE) * SIM_TAX_RATE_PENALTY;
+
 			// general population effect
 			switch(building->type)
 			{

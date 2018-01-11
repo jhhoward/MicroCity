@@ -212,6 +212,8 @@ uint8_t DrawCurrency(int32_t val, uint8_t x, uint8_t y)
 	else
 	{
 		bool isNeg = val < 0;
+		if (isNeg)
+			val = -val;
 		int nextComma = 3;
 
 		while (val)

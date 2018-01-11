@@ -7,7 +7,7 @@
 #include "Interface.h"
 #include "lodepng.h"
 
-#define ZOOM_SCALE 1
+#define ZOOM_SCALE 5
 #define SAVEGAME_NAME "savedcity.cty"
 
 SDL_Window* AppWindow;
@@ -204,7 +204,7 @@ int main(int argc, char* argv[])
 		SDL_RenderCopy(AppRenderer, ScreenTexture, &src, &dest);
 		SDL_RenderPresent(AppRenderer);
 
-		SDL_Delay(1000 / 30);
+		SDL_Delay(1000 / 20);
 	}
 
 	return 0;

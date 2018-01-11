@@ -705,6 +705,62 @@ void DrawNewCityMenu()
 	DrawString(RightArrowStr, DISPLAY_WIDTH / 2 + MAP_WIDTH / 2 + 6, DISPLAY_HEIGHT / 2 - FONT_HEIGHT / 2);
 }
 
+const char BudgetHeaderStr[] PROGMEM =		"Budget report for";
+const char TaxRateStr[] PROGMEM =			"Tax rate         <   % >";
+const char TaxesCollectedStr[] PROGMEM =	"Taxes collected";
+const char PoliceBudgetStr[] PROGMEM =		"Police budget";
+const char FireBudgetStr[] PROGMEM =		"Fire budget";
+const char RoadBudgetStr[] PROGMEM =		"Road budget";
+const char CashFlowStr[] PROGMEM =			"Cash flow";
+
+void DrawBudgetMenu()
+{
+	const int menuWidth = 100;
+	const int menuHeight = 56;
+	const int spacing = FONT_HEIGHT + 1;
+	DrawRect(DISPLAY_WIDTH / 2 - menuWidth / 2 + 1, DISPLAY_HEIGHT / 2 - menuHeight / 2 + 1, menuWidth, menuHeight, 0);
+	DrawFilledRect(DISPLAY_WIDTH / 2 - menuWidth / 2, DISPLAY_HEIGHT / 2 - menuHeight / 2, menuWidth, menuHeight, 1);
+	DrawRect(DISPLAY_WIDTH / 2 - menuWidth / 2, DISPLAY_HEIGHT / 2 - menuHeight / 2, menuWidth, menuHeight, 0);
+
+	uint8_t y = DISPLAY_HEIGHT / 2 - menuHeight / 2 + 2;
+	uint8_t x = DISPLAY_WIDTH / 2 - menuWidth / 2 + 2;
+	uint8_t x2 = DISPLAY_WIDTH / 2 + menuWidth / 2 - 2 - FONT_WIDTH;
+
+	DrawString(BudgetHeaderStr, x, y);
+	int year = State.year > 0 ? State.year + 1899 : 1900;
+	DrawInt(year, x + FONT_WIDTH * 18, y);
+	y += spacing + 2;
+
+	DrawString(TaxRateStr, x, y);
+	DrawInt(State.taxRate, x + FONT_WIDTH * 19, y);
+	y += spacing;
+
+	DrawString(TaxesCollectedStr, x, y);
+	DrawCurrency(State.taxesCollected, x2, y);
+	y += spacing;
+
+	DrawString(FireBudgetStr, x, y);
+	DrawCurrency(State.fireBudget * FIRE_AND_POLICE_MAINTENANCE_COST, x2, y);
+	y += spacing;
+
+	DrawString(PoliceBudgetStr, x, y);
+	DrawCurrency(State.policeBudget * FIRE_AND_POLICE_MAINTENANCE_COST, x2, y);
+	y += spacing;
+
+	DrawString(RoadBudgetStr, x, y);
+	DrawCurrency(State.roadBudget, x2, y);
+	y += spacing + 2;
+
+	DrawString(CashFlowStr, x, y);
+	DrawCurrency(State.taxesCollected - State.roadBudget - State.policeBudget * FIRE_AND_POLICE_MAINTENANCE_COST - State.fireBudget * FIRE_AND_POLICE_MAINTENANCE_COST, x2, y);
+	y += spacing;
+
+	if (UIState.selection < MIN_BUDGET_DISPLAY_TIME)
+	{
+		UIState.selection++;
+	}
+}
+
 void Draw()
 {
 	switch (UIState.state)
@@ -721,6 +777,9 @@ void Draw()
 		break;
 	case SaveLoadMenu:
 		DrawSaveLoadMenu();
+		break;
+	case BudgetMenu:
+		DrawBudgetMenu();
 		break;
 	}
 

@@ -29,6 +29,11 @@ typedef struct
 	uint16_t residentialPopulation;
 	uint16_t industrialPopulation;
 	uint16_t commercialPopulation;
+
+	int32_t taxesCollected;
+	uint8_t policeBudget;
+	uint8_t fireBudget;
+	uint16_t roadBudget;
 } GameState;
 
 extern GameState State;
