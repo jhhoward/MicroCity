@@ -97,7 +97,10 @@ uint8_t CalculateTile(int x, int y)
 	if (connections == RoadMask)
 	{
 		int variant = GetConnectivityTileVariant(x, y, connections);
-		// todo: traffic
+
+    if(!IsTerrainClear(x, y))
+      return FIRST_ROAD_BRIDGE_TILE + (variant & 1);
+    
 		if (HasHighTraffic(x, y))
 			return FIRST_ROAD_TRAFFIC_TILE + variant;
 		return FIRST_ROAD_TILE + variant;
@@ -105,6 +108,10 @@ uint8_t CalculateTile(int x, int y)
 	else if (connections == PowerlineMask)
 	{
 		int variant = GetConnectivityTileVariant(x, y, connections);
+
+    if(!IsTerrainClear(x, y))
+      return FIRST_POWERLINE_BRIDGE_TILE + (variant & 1);
+		
 		return FIRST_POWERLINE_TILE + variant;
 	}
 	else if (connections == (PowerlineMask | RoadMask))

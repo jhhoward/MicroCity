@@ -36,7 +36,7 @@ const char* GetTerrainDescription(uint8_t index)
 
 const uint8_t* GetTerrainData(uint8_t index)
 {
-	switch (State.terrainType)
+	switch (index)
 	{
 	default:
 	case 0: return Terrain1Data;
@@ -55,7 +55,7 @@ bool IsTerrainClear(int x, int y)
 	int index = (blockY * (MAP_WIDTH / 8) + blockX) * 8 + blockU;
 	uint8_t mask = 1 << blockV;
 
-	const uint8_t* terrainData = GetTerrainData(index);
+	const uint8_t* terrainData = GetTerrainData(State.terrainType);
 
 	uint8_t blockData = pgm_read_byte(&terrainData[index]);
 
