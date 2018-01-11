@@ -74,7 +74,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..;$(ProjectDir)\..\SDL\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\MicroCity;$(ProjectDir)\..\SDL\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>$(ProjectDir)\..\SDL\lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -116,33 +116,35 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\Building.cpp" />
-    <ClCompile Include="..\..\Connectivity.cpp" />
-    <ClCompile Include="..\..\Draw.cpp" />
-    <ClCompile Include="..\..\Font.cpp" />
-    <ClCompile Include="..\..\Game.cpp" />
-    <ClCompile Include="..\..\Interface.cpp" />
-    <ClCompile Include="..\..\Simulation.cpp" />
-    <ClCompile Include="..\..\Strings.cpp" />
-    <ClCompile Include="..\..\Terrain.cpp" />
+    <ClCompile Include="..\..\MicroCity\Building.cpp" />
+    <ClCompile Include="..\..\MicroCity\Connectivity.cpp" />
+    <ClCompile Include="..\..\MicroCity\Draw.cpp" />
+    <ClCompile Include="..\..\MicroCity\Font.cpp" />
+    <ClCompile Include="..\..\MicroCity\Game.cpp" />
+    <ClCompile Include="..\..\MicroCity\Interface.cpp" />
+    <ClCompile Include="..\..\MicroCity\Simulation.cpp" />
+    <ClCompile Include="..\..\MicroCity\Strings.cpp" />
+    <ClCompile Include="..\..\MicroCity\Terrain.cpp" />
+    <ClCompile Include="lodepng.cpp" />
     <ClCompile Include="WinMain.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\Building.h" />
-    <ClInclude Include="..\..\Connectivity.h" />
-    <ClInclude Include="..\..\Defines.h" />
-    <ClInclude Include="..\..\Draw.h" />
-    <ClInclude Include="..\..\Font.h" />
-    <ClInclude Include="..\..\Game.h" />
-    <ClInclude Include="..\..\Interface.h" />
-    <ClInclude Include="..\..\LogoBitmap.h" />
-    <ClInclude Include="..\..\Simulation.h" />
-    <ClInclude Include="..\..\Strings.h" />
-    <ClInclude Include="..\..\Terrain.h" />
-    <ClInclude Include="..\..\Terrain1.inc.h" />
-    <ClInclude Include="..\..\Terrain2.inc.h" />
-    <ClInclude Include="..\..\Terrain3.inc.h" />
-    <ClInclude Include="..\..\TileData.h" />
+    <ClInclude Include="..\..\MicroCity\Building.h" />
+    <ClInclude Include="..\..\MicroCity\Connectivity.h" />
+    <ClInclude Include="..\..\MicroCity\Defines.h" />
+    <ClInclude Include="..\..\MicroCity\Draw.h" />
+    <ClInclude Include="..\..\MicroCity\Font.h" />
+    <ClInclude Include="..\..\MicroCity\Game.h" />
+    <ClInclude Include="..\..\MicroCity\Interface.h" />
+    <ClInclude Include="..\..\MicroCity\LogoBitmap.h" />
+    <ClInclude Include="..\..\MicroCity\Simulation.h" />
+    <ClInclude Include="..\..\MicroCity\Strings.h" />
+    <ClInclude Include="..\..\MicroCity\Terrain.h" />
+    <ClInclude Include="..\..\MicroCity\Terrain1.inc.h" />
+    <ClInclude Include="..\..\MicroCity\Terrain2.inc.h" />
+    <ClInclude Include="..\..\MicroCity\Terrain3.inc.h" />
+    <ClInclude Include="..\..\MicroCity\TileData.h" />
+    <ClInclude Include="lodepng.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

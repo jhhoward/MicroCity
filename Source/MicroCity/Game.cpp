@@ -42,7 +42,7 @@ void InitGame()
 	UIState.scrollX = UIState.selectX * 8 + TILE_SIZE / 2 - DISPLAY_WIDTH / 2;
 	UIState.scrollY = UIState.selectY * 8 + TILE_SIZE / 2 - DISPLAY_HEIGHT / 2;
 
-	State.money = 5000000;
+	State.money = STARTING_FUNDS;
 }
 
 void TickGame()

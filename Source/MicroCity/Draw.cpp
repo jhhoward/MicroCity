@@ -21,6 +21,11 @@ const uint8_t* GetTileData(uint8_t tile)
 	return TileImageData + (tile * 8);
 }
 
+inline uint8_t GetProcAtTile(uint8_t x, uint8_t y)
+{
+	return (uint8_t)((((y * 359)) ^ ((x * 431))));
+}
+
 bool HasHighTraffic(int x, int y)
 {
 	// First check for buildings
@@ -76,10 +81,11 @@ uint8_t CalculateTile(int x, int y)
 					}
 					else if (x != building->x + 1 || y != building->y + 1)
 					{
-						uint16_t procVal = GetRandFromSeed(n + y * MAP_WIDTH + x + 1 + MAP_WIDTH * MAP_HEIGHT);
+						//uint16_t procVal = GetRandFromSeed(n + y * MAP_WIDTH + x + 1 + MAP_WIDTH * MAP_HEIGHT);
+						uint8_t procVal = GetProcAtTile(x, y);
 						if ((procVal & 0xF) < (building->populationDensity << 1))
 						{
-							return FIRST_BUILDING_TILE + ((procVal >> 8) & 7);
+							return FIRST_BUILDING_TILE + ((procVal >> 4) & 7);
 						}
 					}
 				}
@@ -409,6 +415,58 @@ void AnimatePowercuts()
 		}
 
 	}
+}
+
+void RefreshBuildingTiles(Building* building)
+{
+	bool showPowercut = (AnimationFrame & 8) != 0;
+	const BuildingInfo* info = GetBuildingInfo(building->type);
+	uint8_t width = pgm_read_byte(&info->width);
+	uint8_t height = pgm_read_byte(&info->height);
+	uint8_t baseTile = pgm_read_byte(&info->drawTile);
+	
+	for(int j = 0; j < height; j++)
+	{
+		for(int i = 0; i < width; i++)
+		{
+			int screenX = building->x + i - CachedScrollX;
+			int screenY = building->y + j - CachedScrollY;
+
+			if (screenX >= 0 && screenY >= 0 && screenX < VISIBLE_TILES_X && screenY < VISIBLE_TILES_Y)
+			{
+				uint8_t tile = baseTile;
+				
+				if (showPowercut && i == 1 && j == 1 && !building->hasPower)
+				{
+					tile = POWERCUT_TILE;
+				}
+				else
+				{
+					tile += j * 16;
+					tile += i;
+
+					// Industrial, commercial and residential buildings have different tiles based on the population density
+					if (building->type == Industrial || building->type == Commercial || building->type == Residential)
+					{
+						if (building->populationDensity >= MAX_POPULATION_DENSITY - 1)
+						{
+							tile += 48;
+						}
+						else if (i != 1 || j != 1)
+						{
+							uint8_t procVal = GetProcAtTile(building->x + i, building->y + j);
+							if ((procVal & 0xF) < (building->populationDensity << 1))
+							{
+								tile = FIRST_BUILDING_TILE + ((procVal >> 4) & 7);
+							}
+						}
+					}
+				}
+				VisibleTileCache[screenY * VISIBLE_TILES_X + screenX] = tile;
+			}
+		}
+	}
+	
 }
 
 void DrawTileAt(uint8_t tile, int x, int y)

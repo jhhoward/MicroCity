@@ -1,8 +1,11 @@
 #include <SDL.h>
 #include <stdio.h>
+#include <sstream>
+#include <iomanip>
 #include "Defines.h"
 #include "Game.h"
 #include "Interface.h"
+#include "lodepng.h"
 
 #define ZOOM_SCALE 1
 #define SAVEGAME_NAME "savedcity.cty"
@@ -13,6 +16,9 @@ SDL_Surface* ScreenSurface;
 SDL_Texture* ScreenTexture;
 
 uint8_t InputMask = 0;
+
+bool IsRecording = false;
+int CurrentRecordingFrame = 0;
 
 struct KeyMap
 {
@@ -110,6 +116,7 @@ int main(int argc, char* argv[])
 	InitGame();
 	
 	bool running = true;
+	int playRate = 1;
 
 	while (running)
 	{
@@ -140,6 +147,17 @@ int main(int argc, char* argv[])
 				case SDLK_ESCAPE:
 					running = false;
 					break;
+				case SDLK_TAB:
+					playRate = 10;
+					break;
+				case SDLK_F12:
+					{
+						lodepng::encode(std::string("screenshot.png"), (unsigned char*)(ScreenSurface->pixels), ScreenSurface->w, ScreenSurface->h);
+					}
+					break;
+				case SDLK_F11:
+					IsRecording = !IsRecording;
+					break;
 				}
 				break;
 			case SDL_KEYUP:
@@ -150,6 +168,8 @@ int main(int argc, char* argv[])
 						InputMask &= ~KeyMappings[n].mask;
 					}
 				}
+				if (event.key.keysym.sym == SDLK_TAB)
+					playRate = 1;
 				break;
 			}
 		}
@@ -159,7 +179,20 @@ int main(int argc, char* argv[])
 
 		//memset(ScreenSurface->pixels, 0, ScreenSurface->format->BytesPerPixel * ScreenSurface->w * ScreenSurface->h);
 
-		TickGame();
+		for (int n = 0; n < playRate; n++)
+		{
+			TickGame();
+		}
+
+		if (IsRecording)
+		{
+			std::ostringstream filename;
+			filename << "Frame";
+			filename << std::setfill('0') << std::setw(5) << CurrentRecordingFrame << ".png";
+
+			lodepng::encode(filename.str(), (unsigned char*)(ScreenSurface->pixels), ScreenSurface->w, ScreenSurface->h);
+			CurrentRecordingFrame++;
+		}
 
 		SDL_UpdateTexture(ScreenTexture, NULL, ScreenSurface->pixels, ScreenSurface->pitch);
 		SDL_Rect src, dest;

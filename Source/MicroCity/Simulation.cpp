@@ -20,13 +20,14 @@ enum SimulationSteps
 #define SIM_UNEMPLOYMENT_PENALTY 100
 #define SIM_INDUSTRIAL_OPPORTUNITY_BOOST 10
 #define SIM_COMMERCIAL_OPPORTUNITY_BOOST 10
-#define SIM_LOCAL_BUILDING_DISTANCE 20
+#define SIM_LOCAL_BUILDING_DISTANCE 32
 #define SIM_LOCAL_BUILDING_INFLUENCE 5
 #define SIM_STADIUM_BOOST 100
 #define SIM_PARK_BOOST 10
 #define SIM_MAX_CRIME 50
 #define SIM_RANDOM_STRENGTH_MASK 31
 #define SIM_POLLUTION_INFLUENCE 1
+#define SIM_MAX_POLLUTION 50
 #define SIM_INDUSTRIAL_BASE_POLLUTION 8
 #define SIM_TRAFFIC_BASE_POLLUTION 8
 #define SIM_POWERPLANT_BASE_POLLUTION 32
@@ -90,10 +91,64 @@ uint8_t GetManhattanDistance(Building* a, Building* b)
 	return x + y;
 }
 
+void DoBudget()
+{
+	// Collect taxes
+	int totalPopulation = (State.residentialPopulation + State.commercialPopulation + State.residentialPopulation) * POPULATION_MULTIPLIER;
+	int taxesCollected = (totalPopulation * State.taxRate) / 100;
+
+	State.money += taxesCollected;
+
+	// Count police and fire departments for costing
+	uint8_t numPoliceDept = 0;
+	uint8_t numFireDept = 0;
+
+	for (int n = 0; n < MAX_BUILDINGS; n++)
+	{
+		if (State.buildings[n].type == PoliceDept)
+		{
+			numPoliceDept++;
+		}
+		else if (State.buildings[n].type == FireDept)
+		{
+			numFireDept++;
+		}
+	}
+
+	State.money -= FIRE_AND_POLICE_MAINTENANCE_COST * numFireDept;
+	State.money -= FIRE_AND_POLICE_MAINTENANCE_COST * numPoliceDept;
+
+	// Count road tiles for cost of road maintenance
+	int numRoadTiles = 0;
+	for (int y = 0; y < MAP_HEIGHT; y++)
+	{
+		for (int x = 0; x < MAP_WIDTH; x++)
+		{
+			if (GetConnections(x, y) & RoadMask)
+				numRoadTiles++;
+		}
+	}
+
+	int roadCost = (numRoadTiles * ROAD_MAINTENANCE_COST) / 100;
+	State.money -= roadCost;
+
+#ifdef _WIN32
+	printf("Budget for %d:\n", State.year + 1899);
+	printf("Population: %d\n", totalPopulation);
+	printf("Taxes collected: $%d\n", taxesCollected);
+	printf("Police cost: %d x $%d = $%d\n", numPoliceDept, FIRE_AND_POLICE_MAINTENANCE_COST, FIRE_AND_POLICE_MAINTENANCE_COST * numPoliceDept);
+	printf("Fire cost: %d x $%d = $%d\n", numFireDept, FIRE_AND_POLICE_MAINTENANCE_COST, FIRE_AND_POLICE_MAINTENANCE_COST * numFireDept);
+	printf("Road maintenance: %d tiles = $%d\n", numRoadTiles, roadCost);
+#endif
+
+}
+
 void SimulateBuilding(Building* building)
 {
 	if (building->type == Residential || building->type == Commercial || building->type == Industrial)
 	{
+		int8_t populationDensityChange = 0;
+
 		if (building->hasPower)
 		{
 			int score = 0;
@@ -134,7 +189,7 @@ void SimulateBuilding(Building* building)
 			// If at least 3 road tiles are adjacent then assume that it is connected to the road network
 			bool isRoadConnected = GetNumRoadConnections(building) >= 3;
 			
-			uint8_t closestPoliceStationDistance = 255;
+			uint8_t closestPoliceStationDistance = 24;
 			int16_t pollution = 0;
 			
 			// influence from local buildings
@@ -214,11 +269,18 @@ void SimulateBuilding(Building* building)
 			}
 			
 			// negative effect from pollution
-			if(building->type != Industrial)
+			if (building->type == Residential)
+			{
+				if (pollution > SIM_MAX_POLLUTION)
+					pollution = SIM_MAX_POLLUTION;
 				score -= pollution * SIM_POLLUTION_INFLUENCE;
+#if _WIN32
+//				printf("Pollution: %d\n", pollution * SIM_POLLUTION_INFLUENCE);
+#endif
+			}
 			
 			// simulate crime based on how far the closest police station is and how populated the area is
-			int crime = (building->populationDensity * (closestPoliceStationDistance - 8));
+			int crime = (building->populationDensity * (closestPoliceStationDistance - 16));
 			if(crime > SIM_MAX_CRIME)
 			{
 				crime = SIM_MAX_CRIME;
@@ -231,22 +293,41 @@ void SimulateBuilding(Building* building)
 			// increase or decrease population density based on score
 			if (building->populationDensity < MAX_POPULATION_DENSITY && score >= SIM_INCREMENT_POP_THRESHOLD)
 			{
-				building->populationDensity++;
+				populationDensityChange = 1;
 			}
 			else if(building->populationDensity > 0 && score <= SIM_DECREMENT_POP_THRESHOLD)
 			{
-				building->populationDensity--;
+				populationDensityChange = -1;
 			}
 			
 			building->heavyTraffic = building->populationDensity > SIM_HEAVY_TRAFFIC_THRESHOLD;
+
+			if(populationDensityChange != 0)
+			{
+				RefreshBuildingTiles(building);
+			}
 		}
 		else
 		{
 			building->heavyTraffic = false;
 			if (building->populationDensity > 0)
 			{
-				building->populationDensity--;
+				populationDensityChange = -1;
 			}
+		}
+
+		building->populationDensity += populationDensityChange;
+		switch (building->type)
+		{
+		case Residential:
+			State.residentialPopulation += populationDensityChange;
+			break;
+		case Industrial:
+			State.industrialPopulation += populationDensityChange;
+			break;
+		case Commercial:
+			State.commercialPopulation += populationDensityChange;
+			break;
 		}
 	}
 }
@@ -300,7 +381,7 @@ void Simulate()
 			State.month = 0;
 			State.year++;
 
-			// TODO: trigger end of year report
+			DoBudget();
 		}
 	}
 	return;
