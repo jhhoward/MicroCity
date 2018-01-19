@@ -13,3 +13,7 @@ void Draw(void);
 
 void ResetVisibleTileCache(void);
 void RefreshBuildingTiles(Building* building);
+void RefreshTile(uint8_t x, uint8_t y);
+void RefreshTileAndConnectedNeighbours(uint8_t x, uint8_t y);
+
+void SetTile(uint8_t x, uint8_t y, uint8_t tile);

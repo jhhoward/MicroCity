@@ -6,8 +6,9 @@
 #include "Game.h"
 #include "Interface.h"
 #include "lodepng.h"
+#include "Simulation.h"
 
-#define ZOOM_SCALE 5
+#define ZOOM_SCALE 1
 #define SAVEGAME_NAME "savedcity.cty"
 
 SDL_Window* AppWindow;
@@ -138,6 +139,9 @@ int main(int argc, char* argv[])
 				}
 				switch (event.key.keysym.sym)
 				{
+				case SDLK_f:
+					StartRandomFire();
+					break;
 				case SDLK_F1:
 					SaveCity();
 					break;

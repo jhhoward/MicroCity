@@ -1,6 +1,7 @@
 #include "Game.h"
 #include "Building.h"
 #include "Connectivity.h"
+#include "Draw.h"
 
 const BuildingInfo BuildingMetaData[] PROGMEM =
 {
@@ -22,6 +23,10 @@ const BuildingInfo BuildingMetaData[] PROGMEM =
 	{ 500, 3, 3, 124 },
 	// Stadium,
 	{ 3000, 4, 4, 164 },
+	// Rubble3x3,
+	{ 0, 3, 3, 0 },
+	// Rubble4x4,
+	{ 0, 4, 4, 0 },
 };
 
 const BuildingInfo* GetBuildingInfo(uint8_t buildingType)
@@ -44,7 +49,22 @@ bool PlaceBuilding(uint8_t buildingType, uint8_t x, uint8_t y)
 
 	if (index == MAX_BUILDINGS)
 	{
-		return false;
+		// Look for rubble placements and replace them instead:
+		index = 0;
+
+		while (index < MAX_BUILDINGS)
+		{
+			if (State.buildings[index].type == Rubble3x3 || State.buildings[index].type == Rubble4x4)
+			{
+				break;
+			}
+			index++;
+		}
+
+		if (index == MAX_BUILDINGS)
+		{
+			return false;
+		}
 	}
 
 	Building* newBuilding = &State.buildings[index];
@@ -69,6 +89,26 @@ bool PlaceBuilding(uint8_t buildingType, uint8_t x, uint8_t y)
 		}
 	}
 
+	// Check for overlapping rubble and remove
+	for (int n = 0; n < MAX_BUILDINGS; n++)
+	{
+		Building* building = &State.buildings[n];
+
+		if (IsRubble(building->type))
+		{
+			const BuildingInfo* otherMetadata = GetBuildingInfo(building->type);
+			uint8_t otherWidth = pgm_read_byte(&otherMetadata->width);
+			uint8_t otherHeight = pgm_read_byte(&otherMetadata->height);
+
+			if (x + width > building->x && x < building->x + otherWidth
+				&& y + height > building->y && y < building->y + otherHeight)
+			{
+				building->type = 0;
+			}
+		}
+	}
+
+	RefreshBuildingTiles(newBuilding);
 
 	return true;
 }
@@ -103,7 +143,7 @@ bool CanPlaceBuilding(uint8_t buildingType, uint8_t x, uint8_t y)
 	{
 		Building* building = &State.buildings[n];
 
-		if (building->type)
+		if (building->type && !IsRubble(building->type))
 		{
 			const BuildingInfo* otherMetadata = GetBuildingInfo(building->type);
 			uint8_t otherWidth = pgm_read_byte(&otherMetadata->width);
@@ -141,4 +181,29 @@ Building* GetBuilding(uint8_t x, uint8_t y)
 	}
 
 	return nullptr;
+}
+
+void DestroyBuilding(Building* building)
+{
+	const BuildingInfo* info = GetBuildingInfo(building->type);
+	uint8_t width = pgm_read_byte(&info->width);
+	uint8_t height = pgm_read_byte(&info->height);
+
+	for (int y = building->y; y < building->y + height; y++)
+	{
+		for (int x = building->x; x < building->x + width; x++)
+		{
+			SetConnections(x, y, 0);
+		}
+	}
+
+	building->type = width == 3 ? Rubble3x3 : Rubble4x4;
+
+	for (uint8_t y = building->y; y < building->y + height; y++)
+	{
+		for (uint8_t x = building->x; x < building->x + width; x++)
+		{
+			SetTile(x, y, RUBBLE_TILE);
+		}
+	}
 }

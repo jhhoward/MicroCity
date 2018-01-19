@@ -8,7 +8,6 @@ enum SimulationSteps
 	SimulateBuildings = 0,
 	SimulatePower = MAX_BUILDINGS,
 	SimulatePopulation,
-	SimulateRefreshTiles,
 	SimulateNextMonth
 };
 
@@ -35,6 +34,10 @@ enum SimulationSteps
 #define SIM_HEAVY_TRAFFIC_THRESHOLD 12
 #define SIM_IDEAL_TAX_RATE 6
 #define SIM_TAX_RATE_PENALTY 10
+#define SIM_FIRE_SPREAD_CHANCE 64					// If 8 bit rand value is less than this then attempt to spread fire
+#define SIM_FIRE_BURN_CHANCE 64						// If 8 bit rand value is less than this then increase fire counter
+#define SIM_FIRE_DEPT_BASE_INFLUENCE 64				// Higher means less influence
+#define SIM_FIRE_DEPT_INFLUENCE_MULTIPLIER 5		// Higher means less influence (based on distance)
 
 uint8_t GetNumRoadConnections(Building* building)
 {
@@ -151,12 +154,98 @@ void DoBudget()
 	UIState.selection = 0;
 }
 
+bool SpreadFire(Building* building)
+{
+	const BuildingInfo* info = GetBuildingInfo(building->type);
+	uint8_t width = pgm_read_byte(&info->width);
+	uint8_t height = pgm_read_byte(&info->height);
+	uint8_t x1 = building->x > 1 ? building->x - 2 : building->x;
+	uint8_t y1 = building->y > 1 ? building->y - 2 : building->y;
+	uint8_t x2 = building->x + width + 2;
+	uint8_t y2 = building->y + height + 2;
+	uint8_t spreadDirection = GetRand() & 3;
+
+	if (spreadDirection & 1)
+	{
+		for (uint8_t j = building->y; j < building->y + height; j++)
+		{
+			Building* neighbour = GetBuilding(spreadDirection & 2 ? x1 : x2, j);
+
+			if (neighbour && !neighbour->onFire && neighbour->type != Park)
+			{
+				neighbour->onFire = 1;
+				RefreshBuildingTiles(neighbour);
+				return true;
+			}
+		}
+	}
+	else
+	{
+		for (uint8_t i = building->x; i < building->x + width; i++)
+		{
+			Building* neighbour = GetBuilding(i, spreadDirection & 2 ? y1 : y2);
+
+			if (neighbour && !neighbour->onFire && neighbour->type != Park)
+			{
+				neighbour->onFire = 1;
+				RefreshBuildingTiles(neighbour);
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
 void SimulateBuilding(Building* building)
 {
-	if (building->type == Residential || building->type == Commercial || building->type == Industrial)
-	{
-		int8_t populationDensityChange = 0;
+	int8_t populationDensityChange = 0;
 
+	if (building->onFire)
+	{
+		// Find closest fire department
+		uint8_t closestFireDept = 0xff;
+
+		for (int n = 0; n < MAX_BUILDINGS; n++)
+		{
+			Building* otherBuilding = &State.buildings[n];
+
+			if (otherBuilding->type == FireDept && otherBuilding->hasPower)
+			{
+				uint8_t distance = GetManhattanDistance(building, otherBuilding);
+
+				if (distance < closestFireDept)
+				{
+					closestFireDept = distance;
+				}
+			}
+		}
+
+		int fireDeptInfluence = SIM_FIRE_DEPT_BASE_INFLUENCE + closestFireDept * SIM_FIRE_DEPT_INFLUENCE_MULTIPLIER;
+		
+		if (fireDeptInfluence <= 255 && (GetRand() & 0xff) > (uint8_t)(fireDeptInfluence))
+		{
+			building->onFire--;
+		}
+		else if ((GetRand() & 0xff) > SIM_FIRE_SPREAD_CHANCE || !SpreadFire(building))
+		{
+			if ((GetRand() & 0xff) < SIM_FIRE_BURN_CHANCE)
+			{
+				if (building->onFire >= BUILDING_MAX_FIRE_COUNTER)
+				{
+					DestroyBuilding(building);
+				}
+				else
+				{
+					building->onFire++;
+				}
+			}
+		}
+		building->heavyTraffic = false;
+		populationDensityChange = -1;
+	}
+	else if (building->type == Residential || building->type == Commercial || building->type == Industrial)
+	{
 		if (building->hasPower)
 		{
 			int score = 0;
@@ -210,7 +299,7 @@ void SimulateBuilding(Building* building)
 				{
 					Building* otherBuilding = &State.buildings[n];
 					
-					if(building != otherBuilding && otherBuilding->type && (otherBuilding->hasPower || otherBuilding->type == Park))
+					if(building != otherBuilding && otherBuilding->type && (otherBuilding->hasPower || otherBuilding->type == Park) && !otherBuilding->onFire)
 					{
 						uint8_t distance = GetManhattanDistance(building, otherBuilding);
 						
@@ -312,11 +401,6 @@ void SimulateBuilding(Building* building)
 			}
 			
 			building->heavyTraffic = building->populationDensity > SIM_HEAVY_TRAFFIC_THRESHOLD;
-
-			if(populationDensityChange != 0)
-			{
-				RefreshBuildingTiles(building);
-			}
 		}
 		else
 		{
@@ -326,21 +410,23 @@ void SimulateBuilding(Building* building)
 				populationDensityChange = -1;
 			}
 		}
-
-		building->populationDensity += populationDensityChange;
-		switch (building->type)
-		{
-		case Residential:
-			State.residentialPopulation += populationDensityChange;
-			break;
-		case Industrial:
-			State.industrialPopulation += populationDensityChange;
-			break;
-		case Commercial:
-			State.commercialPopulation += populationDensityChange;
-			break;
-		}
 	}
+
+	building->populationDensity += populationDensityChange;
+	switch (building->type)
+	{
+	case Residential:
+		State.residentialPopulation += populationDensityChange;
+		break;
+	case Industrial:
+		State.industrialPopulation += populationDensityChange;
+		break;
+	case Commercial:
+		State.commercialPopulation += populationDensityChange;
+		break;
+	}
+
+	RefreshBuildingTiles(building);
 }
 
 void CountPopulation()
@@ -377,9 +463,6 @@ void Simulate()
 	case SimulatePower:
 		CalculatePowerConnectivity();
 		break;
-	case SimulateRefreshTiles:
-		ResetVisibleTileCache();
-		break;
 	case SimulatePopulation:
 		CountPopulation();
 		break;
@@ -399,4 +482,23 @@ void Simulate()
 	}
 
 	State.simulationStep++;
+}
+
+bool StartRandomFire()
+{
+	int attemptsLeft = MAX_BUILDINGS;
+
+	while (attemptsLeft)
+	{
+		int index = GetRand() & 0xff;
+		if (index < MAX_BUILDINGS && State.buildings[index].type && !State.buildings[index].onFire && State.buildings[index].type != Park)
+		{
+			State.buildings[index].onFire = 1;
+			RefreshBuildingTiles(&State.buildings[index]);
+			return true;
+		}
+		attemptsLeft--;
+	}
+
+	return false;
 }

@@ -227,7 +227,7 @@ void HandleInput(uint8_t input)
 			if (UIState.brush == Bulldozer)
 			{
 				Building* building = GetBuilding(UIState.selectX, UIState.selectY);
-				if (building)
+				if (building && !IsRubble(building->type))
 				{
 					const BuildingInfo* buildingInfo = GetBuildingInfo(building->type);
 					uint8_t width = pgm_read_byte(&buildingInfo->width);
@@ -238,18 +238,7 @@ void HandleInput(uint8_t input)
 					{
 						State.money -= cost;
 
-						for (int y = building->y; y < building->y + height; y++)
-						{
-							for (int x = building->x; x < building->x + width; x++)
-							{
-								SetConnections(x, y, 0);
-							}
-						}
-
-						building->type = 0;
-
-						// TODO: update graphics
-						ResetVisibleTileCache();
+						DestroyBuilding(building);
 					}
 					else
 					{
@@ -265,9 +254,8 @@ void HandleInput(uint8_t input)
 							State.money -= BULLDOZER_COST;
 
 							SetConnections(UIState.selectX, UIState.selectY, 0);
-
-							// TODO: update graphics
-							ResetVisibleTileCache();
+							RefreshTileAndConnectedNeighbours(UIState.selectX, UIState.selectY);
+							SetTile(UIState.selectX, UIState.selectY, RUBBLE_TILE);
 						}
 						else
 						{
@@ -285,7 +273,7 @@ void HandleInput(uint8_t input)
 				// Is powerline or road
 
 				Building* building = GetBuilding(UIState.selectX, UIState.selectY);
-				if (building)
+				if (building && !IsRubble(building->type))
 				{
 					// TODO: can't build here
 				}
@@ -304,8 +292,14 @@ void HandleInput(uint8_t input)
 							{
 								State.money -= cost;
 								SetConnections(UIState.selectX, UIState.selectY, currentConnections | mask);
-								// TODO: update graphics
-								ResetVisibleTileCache();
+
+								// Remove rubble
+								if (building)
+								{
+									building->type = 0;
+								}
+
+								RefreshTileAndConnectedNeighbours(UIState.selectX, UIState.selectY);
 							}
 							else
 							{
@@ -331,8 +325,6 @@ void HandleInput(uint8_t input)
 						if (PlaceBuilding(buildingType, placeX, placeY))
 						{
 							State.money -= cost;
-							// TODO: update graphics
-							ResetVisibleTileCache();
 						}
 						else
 						{
