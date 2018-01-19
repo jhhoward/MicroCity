@@ -22,7 +22,7 @@ typedef struct
 	uint8_t y : 6;
 	uint8_t type : 4;
 	uint8_t populationDensity : 4;
-	uint8_t flags : 2;
+	uint8_t onFire : 2;
 	bool heavyTraffic : 1;
 	bool hasPower : 1;
 } Building;

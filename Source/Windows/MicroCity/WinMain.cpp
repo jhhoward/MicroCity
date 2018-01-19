@@ -204,7 +204,7 @@ int main(int argc, char* argv[])
 		SDL_RenderCopy(AppRenderer, ScreenTexture, &src, &dest);
 		SDL_RenderPresent(AppRenderer);
 
-		SDL_Delay(1000 / 20);
+		SDL_Delay(1000 / 25);
 	}
 
 	return 0;

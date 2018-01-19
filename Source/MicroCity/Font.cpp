@@ -134,6 +134,90 @@ static uint8_t PrintX, PrintY;
 
 void DrawChar(char c)
 {
+	const uint8_t index = ((unsigned char)(c)) - 32;
+	uint8_t data1 = pgm_read_byte(&font4x6[index][0]);
+	uint8_t data2 = pgm_read_byte(&font4x6[index][1]);
+	uint8_t y = PrintY;
+
+	if (data2 & 1)	// Descender e.g. j, g
+	{
+		PutPixel(PrintX, y, 1);
+		PutPixel(PrintX + 1, y, 1);
+		PutPixel(PrintX + 2, y, 1);
+		PutPixel(PrintX + 3, y, 1);
+		y++;
+
+		PutPixel(PrintX, y, (data1 & 0x80) ? 0 : 1);
+		PutPixel(PrintX + 1, y, (data1 & 0x40) ? 0 : 1);
+		PutPixel(PrintX + 2, y, (data1 & 0x20) ? 0 : 1);
+		PutPixel(PrintX + 3, y, 1);
+		y++;
+
+		PutPixel(PrintX, y, (data1 & 0x10) ? 0 : 1);
+		PutPixel(PrintX + 1, y, (data1 & 0x8) ? 0 : 1);
+		PutPixel(PrintX + 2, y, (data1 & 0x4) ? 0 : 1);
+		PutPixel(PrintX + 3, y, 1);
+		y++;
+
+		PutPixel(PrintX, y, (data1 & 0x2) ? 0 : 1);
+		PutPixel(PrintX + 1, y, (data1 & 0x1) ? 0 : 1);
+		PutPixel(PrintX + 2, y, (data2 & 0x2) ? 0 : 1);
+		PutPixel(PrintX + 3, y, 1);
+		y++;
+
+		PutPixel(PrintX, y, (data2 & 0x80) ? 0 : 1);
+		PutPixel(PrintX + 1, y, (data2 & 0x40) ? 0 : 1);
+		PutPixel(PrintX + 2, y, (data2 & 0x20) ? 0 : 1);
+		PutPixel(PrintX + 3, y, 1);
+		y++;
+
+		PutPixel(PrintX, y, (data2 & 0x10) ? 0 : 1);
+		PutPixel(PrintX + 1, y, (data2 & 0x8) ? 0 : 1);
+		PutPixel(PrintX + 2, y, (data2 & 0x4) ? 0 : 1);
+		PutPixel(PrintX + 3, y, 1);
+		y++;
+	}
+	else
+	{
+		PutPixel(PrintX, y, (data1 & 0x80) ? 0 : 1);
+		PutPixel(PrintX + 1, y, (data1 & 0x40) ? 0 : 1);
+		PutPixel(PrintX + 2, y, (data1 & 0x20) ? 0 : 1);
+		PutPixel(PrintX + 3, y, 1);
+		y++;
+
+		PutPixel(PrintX, y, (data1 & 0x10) ? 0 : 1);
+		PutPixel(PrintX + 1, y, (data1 & 0x8) ? 0 : 1);
+		PutPixel(PrintX + 2, y, (data1 & 0x4) ? 0 : 1);
+		PutPixel(PrintX + 3, y, 1);
+		y++;
+
+		PutPixel(PrintX, y, (data1 & 0x2) ? 0 : 1);
+		PutPixel(PrintX + 1, y, (data1 & 0x1) ? 0 : 1);
+		PutPixel(PrintX + 2, y, (data2 & 0x2) ? 0 : 1);
+		PutPixel(PrintX + 3, y, 1);
+		y++;
+
+		PutPixel(PrintX, y, (data2 & 0x80) ? 0 : 1);
+		PutPixel(PrintX + 1, y, (data2 & 0x40) ? 0 : 1);
+		PutPixel(PrintX + 2, y, (data2 & 0x20) ? 0 : 1);
+		PutPixel(PrintX + 3, y, 1);
+		y++;
+
+		PutPixel(PrintX, y, (data2 & 0x10) ? 0 : 1);
+		PutPixel(PrintX + 1, y, (data2 & 0x8) ? 0 : 1);
+		PutPixel(PrintX + 2, y, (data2 & 0x4) ? 0 : 1);
+		PutPixel(PrintX + 3, y, 1);
+		y++;
+
+		PutPixel(PrintX, y, 1);
+		PutPixel(PrintX + 1, y, 1);
+		PutPixel(PrintX + 2, y, 1);
+		PutPixel(PrintX + 3, y, 1);
+	}
+}
+
+void DrawCharOld(char c)
+{
 	uint8_t y = PrintY;
 
 	for (int row = 0; row < FONT_HEIGHT; row++)

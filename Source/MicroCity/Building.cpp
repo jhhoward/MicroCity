@@ -53,7 +53,7 @@ bool PlaceBuilding(uint8_t buildingType, uint8_t x, uint8_t y)
 	newBuilding->y = y;
 	newBuilding->populationDensity = 0;
 	newBuilding->hasPower = false;
-	newBuilding->flags = 0;
+	newBuilding->onFire = 0;
 
 	// Internally building space is represented as power lines to correctly flood fill etc
 	const BuildingInfo* metadata = GetBuildingInfo(buildingType);

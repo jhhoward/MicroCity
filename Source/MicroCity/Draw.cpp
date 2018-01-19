@@ -72,6 +72,12 @@ uint8_t CalculateTile(int x, int y)
 			uint8_t tile = pgm_read_byte(&info->drawTile);
 			if (x < building->x + width && y < building->y + height)
 			{
+				if (building->onFire)
+				{
+					uint8_t procVal = GetProcAtTile(x, y);
+					return FIRST_FIRE_TILE + (procVal & 3);
+				}
+
 				// Industrial, commercial and residential buildings have different tiles based on the population density
 				if (building->type == Industrial || building->type == Commercial || building->type == Residential)
 				{
@@ -131,14 +137,21 @@ uint8_t CalculateTile(int x, int y)
 
 inline uint8_t GetCachedTile(int x, int y)
 {
-	//return CalculateTile(CachedScrollX + x, CachedScrollY + y);
 	uint8_t tile = VisibleTileCache[y * VISIBLE_TILES_X + x];
 
+	// Animate water tiles
 	if (tile >= FIRST_WATER_TILE && tile <= LAST_WATER_TILE)
 	{
 		tile = FIRST_WATER_TILE + ((tile - FIRST_WATER_TILE + (AnimationFrame >> 1)) & 3);
 	}
 
+	// Animate fire tiles
+	if (tile >= FIRST_FIRE_TILE && tile <= LAST_FIRE_TILE)
+	{
+		tile = FIRST_FIRE_TILE + ((tile - FIRST_FIRE_TILE + (AnimationFrame >> 1)) & 3);
+	}
+
+	// Animate traffic tiles
 	if ((AnimationFrame & 4) && tile >= FIRST_ROAD_TRAFFIC_TILE && tile <= LAST_ROAD_TRAFFIC_TILE)
 	{
 		tile += 16;

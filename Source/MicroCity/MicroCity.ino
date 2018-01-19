@@ -104,7 +104,7 @@ uint8_t* GetPowerGrid()
 void setup()
 {
   arduboy.begin();
-  arduboy.setFrameRate(30);
+  arduboy.setFrameRate(25);
 
   InitGame();
 }

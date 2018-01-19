@@ -64,8 +64,22 @@ bool IsTerrainClear(int x, int y)
 
 uint8_t GetTerrainTile(int x, int y)
 {
+	bool northClear = y == 0 || IsTerrainClear(x, y - 1);
+	bool eastClear = x >= MAP_WIDTH - 1 || IsTerrainClear(x + 1, y);
+	bool southClear = y >= MAP_HEIGHT - 1 || IsTerrainClear(x, y + 1);
+	bool westClear = x == 0 || IsTerrainClear(x - 1, y);
+
 	if (IsTerrainClear(x, y))
 	{
+		if (!northClear && !westClear)
+			return NORTH_WEST_EDGE_TILE;
+		if (!northClear && !eastClear)
+			return NORTH_EAST_EDGE_TILE;
+		if (!southClear && !westClear)
+			return SOUTH_WEST_EDGE_TILE;
+		if (!southClear && !eastClear)
+			return SOUTH_EAST_EDGE_TILE;
+
 		return FIRST_TERRAIN_TILE + ((((y * 359)) ^ ((x * 431))) & 3);
 	}
 	else
