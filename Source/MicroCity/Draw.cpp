@@ -21,6 +21,9 @@ uint8_t AnimationFrame = 0;
 const uint8_t FireMap[FIREMAP_SIZE] PROGMEM =
 { 1,2,3,1,2,3,1,3,1,2,3,2,2,1,3,1 };
 
+const uint8_t BuildingPopulaceMap[] PROGMEM =
+{ 1,0xd,5,0xb,7,0xe,3,4,1,6,0xc,2,0xa,9,0xb,8 };
+
 const uint8_t* GetTileData(uint8_t tile)
 {
 	return TileImageData + (tile * 8);
@@ -55,12 +58,8 @@ bool HasHighTraffic(int x, int y)
 	return false;
 }
 
-#if 0 
 uint8_t CalculateBuildingTile(Building* building, uint8_t x, uint8_t y)
 {
-	if (IsRubble(building->type))
-		return RUBBLE_TILE;
-
 	const BuildingInfo* info = GetBuildingInfo(building->type);
 	uint8_t width = pgm_read_byte(&info->width);
 	uint8_t height = pgm_read_byte(&info->height);
@@ -82,6 +81,9 @@ uint8_t CalculateBuildingTile(Building* building, uint8_t x, uint8_t y)
 		}
 	}
 
+	if (IsRubble(building->type))
+		return RUBBLE_TILE;
+
 	// Industrial, commercial and residential buildings have different tiles based on the population density
 	if (building->type == Industrial || building->type == Commercial || building->type == Residential)
 	{
@@ -91,11 +93,13 @@ uint8_t CalculateBuildingTile(Building* building, uint8_t x, uint8_t y)
 		}
 		else if (x != 1 || y != 1)
 		{
-			//uint16_t procVal = GetRandFromSeed(n + y * MAP_WIDTH + x + 1 + MAP_WIDTH * MAP_HEIGHT);
-			uint8_t procVal = GetProcAtTile(x, y);
-			if ((procVal & 0xF) < (building->populationDensity << 1))
+			int index = y * height + x + GetProcAtTile(building->x, building->y);
+			bool hasBuilding = building->populationDensity >= pgm_read_byte(&BuildingPopulaceMap[index & 0xf]);
+
+			if (hasBuilding)
 			{
-				return FIRST_BUILDING_TILE + ((procVal >> 4) & 7);
+				uint8_t procVal = GetProcAtTile(x, y);
+				return FIRST_BUILDING_TILE + (procVal & 7);
 			}
 		}
 	}
@@ -104,7 +108,6 @@ uint8_t CalculateBuildingTile(Building* building, uint8_t x, uint8_t y)
 	tile += x;
 	return tile;
 }
-#endif
 
 // Calculate which visible tile to use
 uint8_t CalculateTile(int x, int y)
@@ -128,46 +131,7 @@ uint8_t CalculateTile(int x, int y)
 			uint8_t tile = pgm_read_byte(&info->drawTile);
 			if (x < building->x + width && y < building->y + height)
 			{
-				if (IsRubble(building->type))
-					return RUBBLE_TILE;
-
-				if (building->onFire)
-				{
-					if (!((building->type == Industrial || building->type == Commercial || building->type == Residential)
-						&& x == building->x + 1 && y == building->y + 1))
-					{
-						int index = (y - building->y) * height + (x - building->x) + GetProcAtTile(building->x, building->y);
-						bool onFire = building->onFire >= pgm_read_byte(&FireMap[index & (FIREMAP_SIZE - 1)]);
-
-						if (onFire)
-						{
-							uint8_t procVal = GetProcAtTile(x, y);
-							return FIRST_FIRE_TILE + (procVal & 3);
-						}
-					}
-				}
-
-				// Industrial, commercial and residential buildings have different tiles based on the population density
-				if (building->type == Industrial || building->type == Commercial || building->type == Residential)
-				{
-					if (building->populationDensity >= MAX_POPULATION_DENSITY - 1)
-					{
-						tile += 48;
-					}
-					else if (x != building->x + 1 || y != building->y + 1)
-					{
-						//uint16_t procVal = GetRandFromSeed(n + y * MAP_WIDTH + x + 1 + MAP_WIDTH * MAP_HEIGHT);
-						uint8_t procVal = GetProcAtTile(x, y);
-						if ((procVal & 0xF) < (building->populationDensity << 1))
-						{
-							return FIRST_BUILDING_TILE + ((procVal >> 4) & 7);
-						}
-					}
-				}
-
-				tile += (y - building->y) * 16;
-				tile += (x - building->x);
-				return tile;
+				return CalculateBuildingTile(building, x - building->x, y - building->y);
 			}
 		}
 	}
@@ -179,8 +143,8 @@ uint8_t CalculateTile(int x, int y)
 	{
 		int variant = GetConnectivityTileVariant(x, y, connections);
 
-    if(!IsTerrainClear(x, y))
-      return FIRST_ROAD_BRIDGE_TILE + (variant & 1);
+		if(!IsTerrainClear(x, y))
+			return FIRST_ROAD_BRIDGE_TILE + (variant & 1);
     
 		if (HasHighTraffic(x, y))
 			return FIRST_ROAD_TRAFFIC_TILE + variant;
@@ -190,8 +154,8 @@ uint8_t CalculateTile(int x, int y)
 	{
 		int variant = GetConnectivityTileVariant(x, y, connections);
 
-    if(!IsTerrainClear(x, y))
-      return FIRST_POWERLINE_BRIDGE_TILE + (variant & 1);
+		 if(!IsTerrainClear(x, y))
+			return FIRST_POWERLINE_BRIDGE_TILE + (variant & 1);
 		
 		return FIRST_POWERLINE_TILE + variant;
 	}
@@ -206,6 +170,22 @@ uint8_t CalculateTile(int x, int y)
 
 inline uint8_t GetCachedTile(int x, int y)
 {
+	//// Uncomment to visualise power connectivity
+	/*
+	if (AnimationFrame & 4)
+	{
+		x += CachedScrollX;
+		y += CachedScrollY;
+		int index = y * MAP_WIDTH + x;
+		int mask = 1 << (index & 7);
+		uint8_t val = GetPowerGrid()[index >> 3];
+
+		return (val & mask) != 0 ? 1 : 0;
+	}
+	*/
+	////
+
+
 	uint8_t tile = VisibleTileCache[y * VISIBLE_TILES_X + x];
 
 	// Animate water tiles
@@ -242,44 +222,6 @@ void ResetVisibleTileCache()
 		}
 	}
 }
-
-/*
-// TODO: optimise loop to use the system's internal display format to write out a whole byte at a time
-void DrawTiles()
-{
-int tileY = 0;
-int offsetY = UIState.scrollY & (TILE_SIZE - 1);
-
-for(int row = 0; row < DISPLAY_HEIGHT; row++)
-{
-int tileX = 0;
-int offsetX = UIState.scrollX & (TILE_SIZE - 1);
-uint8_t currentTile = GetCachedTile(tileX, tileY);
-uint8_t readBuf = pgm_read_byte(&GetTileData(currentTile)[offsetY]);
-readBuf >>= offsetX;
-
-for(int col = 0; col < DISPLAY_WIDTH; col++)
-{
-PutPixel(col, row, readBuf & 1);
-
-offsetX = (offsetX + 1) & 7;
-readBuf >>= 1;
-
-if(!offsetX)
-{
-tileX++;
-currentTile = GetCachedTile(tileX, tileY);
-readBuf = pgm_read_byte(&GetTileData(currentTile)[offsetY]);
-}
-}
-
-offsetY = (offsetY + 1) & 7;
-if(!offsetY)
-{
-tileY++;
-}
-}
-}*/
 
 void DrawTiles()
 {
@@ -480,19 +422,7 @@ void AnimatePowercuts()
 				}
 				else
 				{
-					VisibleTileCache[screenY * VISIBLE_TILES_X + screenX] = CalculateTile(building->x + 1, building->y + 1);
-					/*const BuildingInfo* info = GetBuildingInfo(building->type);
-					uint8_t tile = pgm_read_byte(&info->drawTile);
-
-					if (building->type == Industrial || building->type == Commercial || building->type == Residential)
-					{
-						if (building->populationDensity >= MAX_POPULATION_DENSITY - 1)
-						{
-							tile += 48;
-						}
-					}
-
-					VisibleTileCache[screenY * VISIBLE_TILES_X + screenX] = tile + 17;*/
+					VisibleTileCache[screenY * VISIBLE_TILES_X + screenX] = CalculateBuildingTile(building, 1, 1);
 				}
 			}
 		}
@@ -554,76 +484,32 @@ void RefreshBuildingTiles(Building* building)
 
 			if (screenX >= 0 && screenY >= 0 && screenX < VISIBLE_TILES_X && screenY < VISIBLE_TILES_Y)
 			{
-				VisibleTileCache[screenY * VISIBLE_TILES_X + screenX] = CalculateTile(x, y);
+				VisibleTileCache[screenY * VISIBLE_TILES_X + screenX] = CalculateBuildingTile(building, i, j);
 			}
 		}
 	}
 
-	/*
-	bool showPowercut = (AnimationFrame & 8) != 0;
-	const BuildingInfo* info = GetBuildingInfo(building->type);
-	uint8_t width = pgm_read_byte(&info->width);
-	uint8_t height = pgm_read_byte(&info->height);
-	uint8_t baseTile = pgm_read_byte(&info->drawTile);
-	
-	for(int j = 0; j < height; j++)
+	// Refresh traffic
+	uint8_t x1 = building->x > 0 ? building->x - 1 : 0;
+	uint8_t x2 = building->x + width < MAP_WIDTH ? building->x + width : MAP_WIDTH - 1;
+	uint8_t y1 = building->y > 0 ? building->y - 1 : 0;
+	uint8_t y2 = building->y + height < MAP_HEIGHT ? building->y + height : MAP_HEIGHT - 1;
+
+	for (int i = x1; i <= x2; i++)
 	{
-		for(int i = 0; i < width; i++)
-		{
-			int screenX = building->x + i - CachedScrollX;
-			int screenY = building->y + j - CachedScrollY;
-
-			if (screenX >= 0 && screenY >= 0 && screenX < VISIBLE_TILES_X && screenY < VISIBLE_TILES_Y)
-			{
-				uint8_t tile = baseTile;
-				bool tileOnFire = false;
-				
-				if (building->onFire)
-				{
-					if (!((building->type == Industrial || building->type == Commercial || building->type == Residential)
-						&& i == 1 && j == 1))
-					{
-						int index = j * width + i + GetProcAtTile(building->x, building->y);
-						tileOnFire = building->onFire >= pgm_read_byte(&FireMap[index & (FIREMAP_SIZE - 1)]);
-					}
-				}
-
-				if (tileOnFire)
-				{
-					uint8_t procVal = GetProcAtTile(building->x + i, building->y + j);
-					tile = FIRST_FIRE_TILE + (procVal & 3);
-				}
-				else if (showPowercut && i == 1 && j == 1 && !building->hasPower && !building->onFire)
-				{
-					tile = POWERCUT_TILE;
-				}
-				else
-				{
-					tile += j * 16;
-					tile += i;
-
-					// Industrial, commercial and residential buildings have different tiles based on the population density
-					if (building->type == Industrial || building->type == Commercial || building->type == Residential)
-					{
-						if (building->populationDensity >= MAX_POPULATION_DENSITY - 1)
-						{
-							tile += 48;
-						}
-						else if (i != 1 || j != 1)
-						{
-							uint8_t procVal = GetProcAtTile(building->x + i, building->y + j);
-							if ((procVal & 0xF) < (building->populationDensity << 1))
-							{
-								tile = FIRST_BUILDING_TILE + ((procVal >> 4) & 7);
-							}
-						}
-					}
-				}
-				VisibleTileCache[screenY * VISIBLE_TILES_X + screenX] = tile;
-			}
-		}
+		if (GetConnections(i, y1) & RoadMask)
+			RefreshTile(i, y1);
+		if (GetConnections(i, y2) & RoadMask)
+			RefreshTile(i, y2);
 	}
-	*/
+	for (int i = y1; i <= y2; i++)
+	{
+		if (GetConnections(x1, i) & RoadMask)
+			RefreshTile(x1, i);
+		if (GetConnections(x2, i) & RoadMask)
+			RefreshTile(x2, i);
+	}
+
 }
 
 void DrawTileAt(uint8_t tile, int x, int y)
@@ -641,7 +527,6 @@ void DrawTileAt(uint8_t tile, int x, int y)
 	}
 }
 
-#if _WIN32
 void DrawFilledRect(uint8_t x, uint8_t y, uint8_t w, uint8_t h, uint8_t colour)
 {
 	for (int j = 0; j < h; j++)
@@ -667,7 +552,6 @@ void DrawRect(uint8_t x, uint8_t y, uint8_t w, uint8_t h, uint8_t colour)
 		PutPixel(x + w - 1, y + j, colour);
 	}
 }
-#endif
 
 void DrawUI()
 {
@@ -799,6 +683,7 @@ void DrawInGame()
 const char SaveCityStr[] PROGMEM = "Save City";
 const char LoadCityStr[] PROGMEM = "Load City";
 const char NewCityStr[] PROGMEM = "New City";
+const char TwitterStr[] PROGMEM = "by @jameshhoward";
 
 void DrawSaveLoadMenu()
 {
@@ -826,14 +711,14 @@ void DrawStartScreen()
 {
 	const uint8_t logoWidth = 72;
 	const uint8_t logoHeight = 40;
-	const uint8_t logoY = DISPLAY_HEIGHT / 2 - 28;
-	const int spacing = 12;
+	const uint8_t logoY = DISPLAY_HEIGHT / 2 - 31;
+	const int spacing = 9;
 
 	DrawFilledRect(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT, 1);
 	DrawFilledRect(DISPLAY_WIDTH / 2 - logoWidth / 2, logoY, logoWidth, logoHeight, 0);
 	DrawBitmap(LogoBitmap, DISPLAY_WIDTH / 2 - logoWidth / 2, logoY, logoWidth, logoHeight);
 
-	uint8_t y = logoY + logoHeight;
+	uint8_t y = logoY + logoHeight - 2;
 	uint8_t x = DISPLAY_WIDTH / 2 - FONT_WIDTH * 5;
 
 	uint8_t cursorRectY = y + spacing * UIState.selection - 2;
@@ -842,7 +727,8 @@ void DrawStartScreen()
 	DrawString(NewCityStr, x, y);
 	y += spacing;
 	DrawString(LoadCityStr, x, y);
-
+	y += spacing;
+	DrawString(TwitterStr, x - FONT_WIDTH * 3, y);
 }
 
 const char LeftArrowStr[] PROGMEM = "<";

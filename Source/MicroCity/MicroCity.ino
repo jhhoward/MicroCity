@@ -5,7 +5,7 @@
 #include "Game.h"
 #include "Simulation.h"
 
-Arduboy2 arduboy;
+Arduboy2Base arduboy;
 
 uint8_t GetInput()
 {
@@ -44,6 +44,7 @@ void PutPixel(uint8_t x, uint8_t y, uint8_t colour)
   arduboy.drawPixel(x, y, colour);
 }
 
+/*
 void DrawFilledRect(uint8_t x, uint8_t y, uint8_t w, uint8_t h, uint8_t colour)
 {
   arduboy.fillRect(x, y, w, h, colour);
@@ -53,6 +54,7 @@ void DrawRect(uint8_t x, uint8_t y, uint8_t w, uint8_t h, uint8_t colour)
 {
   arduboy.drawRect(x, y, w, h, colour);
 }
+*/
 
 void DrawBitmap(const uint8_t* bmp, uint8_t x, uint8_t y, uint8_t w, uint8_t h)
 {
@@ -65,9 +67,9 @@ void SaveCity()
 
   // Add a header so we know that the EEPROM contains a saved city
   EEPROM.update(address++, 'C'); 
-  EEPROM.update(address++, 'I'); 
   EEPROM.update(address++, 'T'); 
   EEPROM.update(address++, 'Y'); 
+  EEPROM.update(address++, '1'); 
 
   uint8_t* ptr = (uint8_t*) &State;
   for(size_t n = 0; n < sizeof(GameState); n++)
@@ -82,9 +84,9 @@ bool LoadCity()
   uint16_t address = EEPROM_STORAGE_SPACE_START;
 
   if(EEPROM.read(address++) != 'C') return false;
-  if(EEPROM.read(address++) != 'I') return false;
   if(EEPROM.read(address++) != 'T') return false;
   if(EEPROM.read(address++) != 'Y') return false;
+  if(EEPROM.read(address++) != '1') return false;
 
   uint8_t* ptr = (uint8_t*) &State;
   for(size_t n = 0; n < sizeof(GameState); n++)
@@ -103,7 +105,10 @@ uint8_t* GetPowerGrid()
 
 void setup()
 {
-  arduboy.begin();
+  arduboy.boot();
+  arduboy.flashlight();
+  arduboy.systemButtons();
+  arduboy.bootLogo();
   arduboy.setFrameRate(25);
 
   InitGame();

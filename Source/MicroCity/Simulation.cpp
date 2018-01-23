@@ -2,6 +2,7 @@
 #include "Connectivity.h"
 #include "Draw.h"
 #include "Interface.h"
+#include "Simulation.h"
 
 enum SimulationSteps
 {
@@ -10,6 +11,12 @@ enum SimulationSteps
 	SimulatePopulation,
 	SimulateNextMonth
 };
+
+#ifdef _WIN32
+void DebugBuildingScore(Building* building, int score, int crime, int pollution, int localInfluence, int populationEffect, int randomEffect);
+#else
+inline void DebugBuildingScore(Building* building, int score, int crime, int pollution, int localInfluence, int populationEffect, int randomEffect) {}
+#endif
 
 #define SIM_INCREMENT_POP_THRESHOLD 20				// Score must be more than this to grow
 #define SIM_DECREMENT_POP_THRESHOLD -30				// Score must be less than this to shrink
@@ -21,7 +28,7 @@ enum SimulationSteps
 #define SIM_INDUSTRIAL_OPPORTUNITY_BOOST 10
 #define SIM_COMMERCIAL_OPPORTUNITY_BOOST 10
 #define SIM_LOCAL_BUILDING_DISTANCE 32
-#define SIM_LOCAL_BUILDING_INFLUENCE 5
+#define SIM_LOCAL_BUILDING_INFLUENCE 3
 #define SIM_STADIUM_BOOST 100
 #define SIM_PARK_BOOST 10
 #define SIM_MAX_CRIME 50
@@ -171,7 +178,7 @@ bool SpreadFire(Building* building)
 		{
 			Building* neighbour = GetBuilding(spreadDirection & 2 ? x1 : x2, j);
 
-			if (neighbour && !neighbour->onFire && neighbour->type != Park)
+			if (neighbour && !neighbour->onFire && neighbour->type != Park && !IsRubble(neighbour->type))
 			{
 				neighbour->onFire = 1;
 				RefreshBuildingTiles(neighbour);
@@ -185,7 +192,7 @@ bool SpreadFire(Building* building)
 		{
 			Building* neighbour = GetBuilding(i, spreadDirection & 2 ? y1 : y2);
 
-			if (neighbour && !neighbour->onFire && neighbour->type != Park)
+			if (neighbour && !neighbour->onFire && neighbour->type != Park && !IsRubble(neighbour->type))
 			{
 				neighbour->onFire = 1;
 				RefreshBuildingTiles(neighbour);
@@ -203,6 +210,17 @@ void SimulateBuilding(Building* building)
 
 	if (building->onFire)
 	{
+		if (IsRubble(building->type))
+		{
+			building->onFire--;
+			if ((GetRand() & 0xff) > SIM_FIRE_SPREAD_CHANCE)
+			{
+				SpreadFire(building);
+			}
+			RefreshBuildingTiles(building);
+			return;
+		}
+
 		// Find closest fire department
 		uint8_t closestFireDept = 0xff;
 
@@ -234,6 +252,7 @@ void SimulateBuilding(Building* building)
 				if (building->onFire >= BUILDING_MAX_FIRE_COUNTER)
 				{
 					DestroyBuilding(building);
+					building->onFire = BUILDING_MAX_FIRE_COUNTER;
 				}
 				else
 				{
@@ -242,7 +261,6 @@ void SimulateBuilding(Building* building)
 			}
 		}
 		building->heavyTraffic = false;
-		populationDensityChange = -1;
 	}
 	else if (building->type == Residential || building->type == Commercial || building->type == Industrial)
 	{
@@ -251,7 +269,8 @@ void SimulateBuilding(Building* building)
 			int score = 0;
 			
 			// random effect
-			score += (GetRand() & SIM_RANDOM_STRENGTH_MASK) - (SIM_RANDOM_STRENGTH_MASK / 2);
+			int randomEffect = (GetRand() & SIM_RANDOM_STRENGTH_MASK) - (SIM_RANDOM_STRENGTH_MASK / 2);
+			score += randomEffect;
 			
 			// tend towards average population density
 			score += (AVERAGE_POPULATION_DENSITY - building->populationDensity) * SIM_AVERAGING_STRENGTH;
@@ -260,37 +279,40 @@ void SimulateBuilding(Building* building)
 			score -= (State.taxRate - SIM_IDEAL_TAX_RATE) * SIM_TAX_RATE_PENALTY;
 
 			// general population effect
+			int populationEffect = 0;
 			switch(building->type)
 			{
 				case Residential:
 				if(State.residentialPopulation < State.industrialPopulation)
 				{
-					score += SIM_EMPLOYMENT_BOOST;
+					populationEffect += SIM_EMPLOYMENT_BOOST;
 				}
 				else if(State.residentialPopulation > State.industrialPopulation + State.commercialPopulation)
 				{
-					score -= SIM_UNEMPLOYMENT_PENALTY;
+					populationEffect -= SIM_UNEMPLOYMENT_PENALTY;
 				}
 				break;
 				case Industrial:
 				if(State.industrialPopulation < State.residentialPopulation || State.industrialPopulation < State.commercialPopulation)
 				{
-					score += SIM_INDUSTRIAL_OPPORTUNITY_BOOST;
+					populationEffect += SIM_INDUSTRIAL_OPPORTUNITY_BOOST;
 				}
 				break;
 				case Commercial:
 				if(State.commercialPopulation < State.residentialPopulation || State.commercialPopulation < State.industrialPopulation)
 				{
-					score += SIM_COMMERCIAL_OPPORTUNITY_BOOST;
+					populationEffect += SIM_COMMERCIAL_OPPORTUNITY_BOOST;
 				}
 				break;
 			}
+			score += populationEffect;
 			
 			// If at least 3 road tiles are adjacent then assume that it is connected to the road network
 			bool isRoadConnected = GetNumRoadConnections(building) >= 3;
 			
 			uint8_t closestPoliceStationDistance = 24;
 			int16_t pollution = 0;
+			int16_t localInfluence = 0;
 			
 			// influence from local buildings
 			if(isRoadConnected)
@@ -333,31 +355,31 @@ void SimulateBuilding(Building* building)
 								case Industrial:
 								if(otherBuilding->populationDensity >= building->populationDensity && (building->type == Residential || building->type == Commercial))
 								{
-									score += SIM_LOCAL_BUILDING_INFLUENCE;
+									localInfluence += SIM_LOCAL_BUILDING_INFLUENCE;
 								}
 								break;
 								case Residential:
 								if(otherBuilding->populationDensity >= building->populationDensity && (building->type == Commercial || building->type == Industrial))
 								{
-									score += SIM_LOCAL_BUILDING_INFLUENCE;
+									localInfluence += SIM_LOCAL_BUILDING_INFLUENCE;
 								}
 								break;
 								case Commercial:
 								if(otherBuilding->populationDensity >= building->populationDensity && building->type == Residential)
 								{
-									score += SIM_LOCAL_BUILDING_INFLUENCE;
+									localInfluence += SIM_LOCAL_BUILDING_INFLUENCE;
 								}
 								break;
 								case Stadium:
 								if(building->type == Residential || building->type == Commercial)
 								{
-									score += SIM_STADIUM_BOOST;
+									localInfluence += SIM_STADIUM_BOOST;
 								}
 								break;
 								case Park:
 								if(building->type == Residential)
 								{
-									score += SIM_PARK_BOOST;
+									localInfluence += SIM_PARK_BOOST;
 								}
 								break;
 								default:
@@ -367,6 +389,8 @@ void SimulateBuilding(Building* building)
 					}
 				}
 			}
+
+			score += localInfluence;
 			
 			// negative effect from pollution
 			if (building->type == Residential)
@@ -385,10 +409,14 @@ void SimulateBuilding(Building* building)
 			{
 				crime = SIM_MAX_CRIME;
 			}
-			if(crime > 0)
+			else if (crime < 0)
 			{
-				score -= crime;
+				crime = 0;
 			}
+
+			score -= crime;
+
+			DebugBuildingScore(building, score, crime, pollution * SIM_POLLUTION_INFLUENCE, localInfluence, populationEffect, randomEffect);
 			
 			// increase or decrease population density based on score
 			if (building->populationDensity < MAX_POPULATION_DENSITY && score >= SIM_INCREMENT_POP_THRESHOLD)
@@ -482,6 +510,16 @@ void Simulate()
 	}
 
 	State.simulationStep++;
+	State.timeSinceLastDisaster++;
+
+	if (State.timeSinceLastDisaster > MIN_FRAMES_BETWEEN_DISASTER)
+	{
+		if ((GetRand() & 0xff) == 1)
+		{
+			State.timeSinceLastDisaster = 0;
+			StartRandomFire();
+		}
+	}
 }
 
 bool StartRandomFire()
@@ -491,10 +529,11 @@ bool StartRandomFire()
 	while (attemptsLeft)
 	{
 		int index = GetRand() & 0xff;
-		if (index < MAX_BUILDINGS && State.buildings[index].type && !State.buildings[index].onFire && State.buildings[index].type != Park)
+		if (index < MAX_BUILDINGS && State.buildings[index].type && !State.buildings[index].onFire && !IsRubble(State.buildings[index].type) && State.buildings[index].type != Park)
 		{
 			State.buildings[index].onFire = 1;
 			RefreshBuildingTiles(&State.buildings[index]);
+			FocusTile(State.buildings[index].x + 1, State.buildings[index].y + 1);
 			return true;
 		}
 		attemptsLeft--;

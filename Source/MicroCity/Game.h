@@ -34,6 +34,8 @@ typedef struct
 	uint8_t policeBudget;
 	uint8_t fireBudget;
 	uint16_t roadBudget;
+
+	uint16_t timeSinceLastDisaster;
 } GameState;
 
 extern GameState State;
@@ -46,4 +48,7 @@ void TickGame(void);
 
 void SaveCity(void);
 bool LoadCity(void);
+
+void FocusTile(uint8_t x, uint8_t y);
+
 

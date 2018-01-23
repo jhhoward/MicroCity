@@ -10,7 +10,7 @@ uint8_t* GetPowerGrid();
 inline uint8_t* GetPowerGrid()
 {
 	// TODO: if arduboy then reuse the screen buffer memory
-	static uint8_t PowerGrid[MAP_WIDTH * MAP_HEIGHT / 8];
+	static uint8_t PowerGrid[DISPLAY_WIDTH * DISPLAY_HEIGHT / 8];
 
 	return PowerGrid;
 }
@@ -122,7 +122,7 @@ int GetConnectivityTileVariant(int x, int y, uint8_t mask)
 	return pgm_read_byte(&TileVariants[neighbours]);
 }
 
-bool IsTilePowered(uint8_t x, uint8_t y)
+inline bool IsTilePowered(uint8_t x, uint8_t y)
 {
 	int index = y * MAP_WIDTH + x;
 	int mask = 1 << (index & 7);
@@ -131,7 +131,7 @@ bool IsTilePowered(uint8_t x, uint8_t y)
 	return (val & mask) != 0;
 }
 
-void SetTilePowered(uint8_t x, uint8_t y)
+inline void SetTilePowered(uint8_t x, uint8_t y)
 {
 	int index = y * MAP_WIDTH + x;
 	int mask = 1 << (index & 7);
@@ -164,6 +164,8 @@ void CalculatePowerConnectivity()
 		}
 	}
 }
+
+#ifdef USE_FIXED_MEMORY_FILL
 
 // Power flood fill method is based on the Wikipedia 'Fixed memory method (right hand fill method)'
 enum
@@ -428,3 +430,76 @@ void PowerFloodFill(uint8_t x, uint8_t y)
 	}
 }
 
+#else
+
+#define STACK_PUSH(px, py) \
+	*stackPtr++ = px; \
+	*stackPtr++ = py; \
+	stackSize++; \
+
+#define STACK_POP(px, py) \
+	stackPtr--; py = *stackPtr; \
+	stackPtr--; px = *stackPtr; \
+	stackSize--;
+
+void PowerFloodFill(uint8_t x, uint8_t y)
+{
+	uint8_t* grid = (uint8_t*)GetPowerGrid();
+	uint8_t* ptr = grid;
+	int count = MAP_WIDTH * MAP_HEIGHT / 8;
+
+	while (count--)
+	{
+		*ptr++ = 0;
+	}
+
+	uint8_t* stackPtr = ptr;
+	uint8_t stackSize = 0;
+
+	STACK_PUSH(x, y);
+
+	while (stackSize)
+	{
+		STACK_POP(x, y);
+		int8_t y1 = y;
+
+		while (y1 >= 0 && (GetConnections(x, y1) & PowerlineMask) && !IsTilePowered(x, y1))
+		{
+			y1--;
+		}
+		y1++;
+		bool spanLeft = false;
+		bool spanRight = false;
+		while (y1 < MAP_HEIGHT && (GetConnections(x, y1) & PowerlineMask) && !IsTilePowered(x, y1))
+		{
+			SetTilePowered(x, y1);
+
+			bool canFillLeft = (GetConnections(x - 1, y1) & PowerlineMask) && !IsTilePowered(x - 1, y1);
+
+			if (!spanLeft && x > 0 && canFillLeft)
+			{
+				STACK_PUSH(x - 1, y1);
+				spanLeft = true;
+			}
+			else if (spanLeft && (x - 1 == 0 || !canFillLeft))
+			{
+				spanLeft = false;
+			}
+
+			bool canFillRight = (GetConnections(x + 1, y1) & PowerlineMask) && !IsTilePowered(x + 1, y1);
+
+			if (!spanRight && canFillRight)
+			{
+				STACK_PUSH(x + 1, y1);
+				spanRight = true;
+			}
+			else if (spanRight && x < MAP_WIDTH - 1 && !canFillRight)
+			{
+				spanRight = false;
+			}
+			y1++;
+		}
+	}
+}
+
+#endif

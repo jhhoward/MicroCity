@@ -7,8 +7,9 @@
 #include "Interface.h"
 #include "lodepng.h"
 #include "Simulation.h"
+#include "WinDebug.h"
 
-#define ZOOM_SCALE 1
+#define ZOOM_SCALE 3
 #define SAVEGAME_NAME "savedcity.cty"
 
 SDL_Window* AppWindow;
@@ -100,9 +101,13 @@ uint8_t GetInput()
 	return InputMask;
 }
 
+
 int main(int argc, char* argv[])
 {
 	SDL_Init(SDL_INIT_EVERYTHING);
+
+	CreateDebugWindow();
+
 	SDL_CreateWindowAndRenderer(DISPLAY_WIDTH * ZOOM_SCALE, DISPLAY_HEIGHT * ZOOM_SCALE, SDL_WINDOW_RESIZABLE, &AppWindow, &AppRenderer);
 	SDL_RenderSetLogicalSize(AppRenderer, DISPLAY_WIDTH, DISPLAY_HEIGHT);
 
@@ -162,6 +167,24 @@ int main(int argc, char* argv[])
 				case SDLK_F11:
 					IsRecording = !IsRecording;
 					break;
+				case SDLK_1:
+					SetCurrentDebugView(0);
+					break;
+				case SDLK_2:
+					SetCurrentDebugView(1);
+					break;
+				case SDLK_3:
+					SetCurrentDebugView(2);
+					break;
+				case SDLK_4:
+					SetCurrentDebugView(3);
+					break;
+				case SDLK_5:
+					SetCurrentDebugView(4);
+					break;
+				case SDLK_6:
+					SetCurrentDebugView(5);
+					break;
 				}
 				break;
 			case SDL_KEYUP:
@@ -209,6 +232,8 @@ int main(int argc, char* argv[])
 		SDL_RenderPresent(AppRenderer);
 
 		SDL_Delay(1000 / 25);
+
+		UpdateDebugView();
 	}
 
 	return 0;

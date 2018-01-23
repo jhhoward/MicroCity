@@ -34,15 +34,21 @@ void InitGame()
 	}
 
 	State.taxRate = STARTING_TAX_RATE;
+	State.timeSinceLastDisaster = 0;
 
 	ResetVisibleTileCache();
 	UIState.brush = RoadBrush; //FirstBuildingBrush + 1;
-	UIState.selectX = MAP_WIDTH / 2;
-	UIState.selectY = MAP_HEIGHT / 2;
-	UIState.scrollX = UIState.selectX * 8 + TILE_SIZE / 2 - DISPLAY_WIDTH / 2;
-	UIState.scrollY = UIState.selectY * 8 + TILE_SIZE / 2 - DISPLAY_HEIGHT / 2;
+	FocusTile(MAP_WIDTH / 2, MAP_HEIGHT / 2);
 
 	State.money = STARTING_FUNDS;
+}
+
+void FocusTile(uint8_t x, uint8_t y)
+{
+	UIState.selectX = x;
+	UIState.selectY = y;
+	UIState.scrollX = UIState.selectX * 8 + TILE_SIZE / 2 - DISPLAY_WIDTH / 2;
+	UIState.scrollY = UIState.selectY * 8 + TILE_SIZE / 2 - DISPLAY_HEIGHT / 2;
 }
 
 void TickGame()

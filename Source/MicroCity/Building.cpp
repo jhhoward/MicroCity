@@ -197,6 +197,7 @@ void DestroyBuilding(Building* building)
 		}
 	}
 
+	building->onFire = 0;
 	building->type = width == 3 ? Rubble3x3 : Rubble4x4;
 
 	for (uint8_t y = building->y; y < building->y + height; y++)
