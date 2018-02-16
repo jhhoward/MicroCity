@@ -83,6 +83,26 @@ void WrapMenuInput(uint8_t input, uint8_t numOptions)
 	}
 }
 
+void HandleMovementInput(uint8_t input)
+{
+	if ((input & INPUT_LEFT) && UIState.selectX > 0)
+	{
+		UIState.selectX--;
+	}
+	if ((input & INPUT_UP) && UIState.selectY > 0)
+	{
+		UIState.selectY--;
+	}
+	if ((input & INPUT_RIGHT) && UIState.selectX < MAP_WIDTH - 1)
+	{
+		UIState.selectX++;
+	}
+	if ((input & INPUT_DOWN) && UIState.selectY < MAP_HEIGHT - 1)
+	{
+		UIState.selectY++;
+	}
+}
+
 void HandleInput(uint8_t input)
 {
 	if (UIState.state == ShowingToolbar)
@@ -121,6 +141,10 @@ void HandleInput(uint8_t input)
 				UIState.selection = MIN_BUDGET_DISPLAY_TIME;
 			}
 		}
+	}
+	else if (UIState.state == InGameDisaster)
+	{
+		HandleMovementInput(input);
 	}
 	else if (UIState.state == StartScreen)
 	{
@@ -171,7 +195,7 @@ void HandleInput(uint8_t input)
 	}
 	else if (UIState.state == SaveLoadMenu)
 	{
-		WrapMenuInput(input, 3);
+		WrapMenuInput(input, 4);
 		if (input & (INPUT_A))
 		{
 			UIState.state = InGame;
@@ -194,27 +218,15 @@ void HandleInput(uint8_t input)
 			case 2:
 				UIState.state = NewCityMenu;
 				break;
+			case 3:
+				UIState.autoBudget = !UIState.autoBudget;
+				break;
 			}
 		}
 	}
 	else if (UIState.state == InGame)
 	{
-		if ((input & INPUT_LEFT) && UIState.selectX > 0)
-		{
-			UIState.selectX--;
-		}
-		if ((input & INPUT_UP) && UIState.selectY > 0)
-		{
-			UIState.selectY--;
-		}
-		if ((input & INPUT_RIGHT) && UIState.selectX < MAP_WIDTH - 1)
-		{
-			UIState.selectX++;
-		}
-		if ((input & INPUT_DOWN) && UIState.selectY < MAP_HEIGHT - 1)
-		{
-			UIState.selectY++;
-		}
+		HandleMovementInput(input);
 
 		if (input & INPUT_A)
 		{

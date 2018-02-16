@@ -58,6 +58,11 @@ bool LoadCity()
 	{
 		fread(&State, sizeof(GameState), 1, fs);
 		fclose(fs);
+
+		if (State.timeToNextDisaster > MAX_TIME_BETWEEN_DISASTERS)
+		{
+			State.timeToNextDisaster = MIN_TIME_BETWEEN_DISASTERS;
+		}
 		return true;
 	}
 

@@ -34,13 +34,14 @@ void InitGame()
 	}
 
 	State.taxRate = STARTING_TAX_RATE;
-	State.timeSinceLastDisaster = 0;
+	State.timeToNextDisaster = MAX_TIME_BETWEEN_DISASTERS;
 
 	ResetVisibleTileCache();
 	UIState.brush = RoadBrush; //FirstBuildingBrush + 1;
 	FocusTile(MAP_WIDTH / 2, MAP_HEIGHT / 2);
 
 	State.money = STARTING_FUNDS;
+	UIState.autoBudget = true;
 }
 
 void FocusTile(uint8_t x, uint8_t y)
@@ -56,6 +57,14 @@ void TickGame()
 	if (UIState.state == InGame || UIState.state == ShowingToolbar)
 	{
 		Simulate();
+	}
+	if (UIState.state == InGameDisaster)
+	{
+		if (UIState.selection == 0)
+		{
+			UIState.state = InGame;
+		}
+		else UIState.selection--;
 	}
 
 	ProcessInput();

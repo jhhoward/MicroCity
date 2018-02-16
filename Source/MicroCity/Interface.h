@@ -30,6 +30,7 @@ enum
 	StartScreen,
 	NewCityMenu,
 	InGame,
+	InGameDisaster,
 	ShowingToolbar,
 	SaveLoadMenu,
 	BudgetMenu
@@ -42,6 +43,7 @@ typedef struct
 	uint8_t brush;					// What will be placed 
 	uint8_t selection;      // For when toolbar is open or in a menu
 	uint8_t state;    // Which state the game is in
+	bool autoBudget : 1;
 } UIStateStruct;
 
 extern UIStateStruct UIState;

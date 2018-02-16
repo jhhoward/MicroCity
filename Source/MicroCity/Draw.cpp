@@ -553,6 +553,8 @@ void DrawRect(uint8_t x, uint8_t y, uint8_t w, uint8_t h, uint8_t colour)
 	}
 }
 
+const char FireReportedStr[] PROGMEM = "Fire reported!";
+
 void DrawUI()
 {
 	if (UIState.state == ShowingToolbar)
@@ -593,6 +595,17 @@ void DrawUI()
 		if (cost > 0)
 		{
 			DrawCurrency(cost, DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - FONT_HEIGHT - TILE_SIZE - 2);
+		}
+	}
+	else if (UIState.state == InGameDisaster)
+	{
+		int strLen = strlen_P(FireReportedStr);
+		int x = DISPLAY_WIDTH / 2 - strLen * (FONT_WIDTH / 2);
+		DrawFilledRect(x - 1, DISPLAY_HEIGHT - TILE_SIZE - 2, 2 + strlen_P(FireReportedStr) * FONT_WIDTH + 2, TILE_SIZE + 2, 1);
+
+		if (UIState.selection & 4)
+		{
+			DrawString(FireReportedStr, x, DISPLAY_HEIGHT - FONT_HEIGHT - 1);
 		}
 	}
 	else
@@ -672,7 +685,7 @@ void DrawInGame()
 
 	DrawTiles();
 
-	if (UIState.state == InGame)
+	if (UIState.state == InGame || UIState.state == InGameDisaster)
 	{
 		DrawCursor();
 	}
@@ -683,28 +696,35 @@ void DrawInGame()
 const char SaveCityStr[] PROGMEM = "Save City";
 const char LoadCityStr[] PROGMEM = "Load City";
 const char NewCityStr[] PROGMEM = "New City";
+const char AutoBudgetStr[] PROGMEM = "Auto Budget:";
+const char OnStr[] PROGMEM = "On";
+const char OffStr[] PROGMEM = "Off";
 const char TwitterStr[] PROGMEM = "by @jameshhoward";
 
 void DrawSaveLoadMenu()
 {
-	const int menuWidth = 60;
-	const int menuHeight = 44;
-	const int spacing = 12;
+	const int menuWidth = 68;
+	const int menuHeight = 50;
+	const int spacing = 10;
 	DrawRect(DISPLAY_WIDTH / 2 - menuWidth / 2 + 1, DISPLAY_HEIGHT / 2 - menuHeight / 2 + 1, menuWidth, menuHeight, 0);
 	DrawFilledRect(DISPLAY_WIDTH / 2 - menuWidth / 2, DISPLAY_HEIGHT / 2 - menuHeight / 2, menuWidth, menuHeight, 1);
 	DrawRect(DISPLAY_WIDTH / 2 - menuWidth / 2, DISPLAY_HEIGHT / 2 - menuHeight / 2, menuWidth, menuHeight, 0);
 
-	uint8_t y = DISPLAY_HEIGHT / 2 - 16;
-	uint8_t x = DISPLAY_WIDTH / 2 - FONT_WIDTH * 5;
+	uint8_t y = DISPLAY_HEIGHT / 2 - menuHeight / 2 + spacing / 2 + 2;
+	uint8_t x = DISPLAY_WIDTH / 2 - menuWidth / 2 + FONT_WIDTH;
 
 	uint8_t cursorRectY = y + spacing * UIState.selection - 2;
-	DrawCursorRect(x - 2, cursorRectY, FONT_WIDTH * 10 + 4, FONT_HEIGHT + 4);
+	DrawCursorRect(x - 2, cursorRectY, menuWidth - FONT_WIDTH * 2 + 4, FONT_HEIGHT + 4);
 
 	DrawString(SaveCityStr, x, y);
 	y += spacing;
 	DrawString(LoadCityStr, x, y);
 	y += spacing;
 	DrawString(NewCityStr, x, y);
+	y += spacing;
+	DrawString(AutoBudgetStr, x, y);
+
+	DrawString(UIState.autoBudget ? OnStr : OffStr, x + 12 * FONT_WIDTH, y);
 }
 
 void DrawStartScreen()
@@ -815,6 +835,7 @@ void Draw()
 		DrawNewCityMenu();
 		break;
 	case InGame:
+	case InGameDisaster:
 	case ShowingToolbar:
 		DrawInGame();
 		break;

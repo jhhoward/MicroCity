@@ -22,18 +22,19 @@ inline void DebugBuildingScore(Building* building, int score, int crime, int pol
 #define SIM_DECREMENT_POP_THRESHOLD -30				// Score must be less than this to shrink
 
 #define AVERAGE_POPULATION_DENSITY 8
+#define SIM_BASE_SCORE 15							// When population is zero
 #define SIM_AVERAGING_STRENGTH 0
 #define SIM_EMPLOYMENT_BOOST 10
 #define SIM_UNEMPLOYMENT_PENALTY 100
 #define SIM_INDUSTRIAL_OPPORTUNITY_BOOST 10
 #define SIM_COMMERCIAL_OPPORTUNITY_BOOST 10
 #define SIM_LOCAL_BUILDING_DISTANCE 32
-#define SIM_LOCAL_BUILDING_INFLUENCE 3
+#define SIM_LOCAL_BUILDING_INFLUENCE 4
 #define SIM_STADIUM_BOOST 100
-#define SIM_PARK_BOOST 10
+#define SIM_PARK_BOOST 5
 #define SIM_MAX_CRIME 50
 #define SIM_RANDOM_STRENGTH_MASK 31
-#define SIM_POLLUTION_INFLUENCE 1
+#define SIM_POLLUTION_INFLUENCE 2
 #define SIM_MAX_POLLUTION 50
 #define SIM_INDUSTRIAL_BASE_POLLUTION 8
 #define SIM_TRAFFIC_BASE_POLLUTION 8
@@ -157,8 +158,12 @@ void DoBudget()
 	printf("Road maintenance: %d tiles = $%d\n", numRoadTiles, State.roadBudget);
 #endif
 
-	UIState.state = BudgetMenu;
-	UIState.selection = 0;
+	int32_t cashFlow = State.taxesCollected - State.roadBudget - State.policeBudget * FIRE_AND_POLICE_MAINTENANCE_COST - State.fireBudget * FIRE_AND_POLICE_MAINTENANCE_COST;
+	if (!UIState.autoBudget || cashFlow <= 0 || State.money <= 0)
+	{
+		UIState.state = BudgetMenu;
+		UIState.selection = 0;
+	}
 }
 
 bool SpreadFire(Building* building)
@@ -317,6 +322,11 @@ void SimulateBuilding(Building* building)
 			// influence from local buildings
 			if(isRoadConnected)
 			{
+				if (building->populationDensity == 0)
+				{
+					score += SIM_BASE_SCORE;
+				}
+
 				for(int n = 0; n < MAX_BUILDINGS; n++)
 				{
 					Building* otherBuilding = &State.buildings[n];
@@ -353,13 +363,17 @@ void SimulateBuilding(Building* building)
 							switch(otherBuilding->type)
 							{
 								case Industrial:
-								if(otherBuilding->populationDensity >= building->populationDensity && (building->type == Residential || building->type == Commercial))
+								if(otherBuilding->populationDensity >= building->populationDensity && building->type == Residential)
+								{
+									localInfluence += SIM_LOCAL_BUILDING_INFLUENCE;
+								}
+								else if (otherBuilding->populationDensity > building->populationDensity && building->type == Commercial)
 								{
 									localInfluence += SIM_LOCAL_BUILDING_INFLUENCE;
 								}
 								break;
 								case Residential:
-								if(otherBuilding->populationDensity >= building->populationDensity && (building->type == Commercial || building->type == Industrial))
+								if(otherBuilding->populationDensity > building->populationDensity && (building->type == Commercial || building->type == Industrial))
 								{
 									localInfluence += SIM_LOCAL_BUILDING_INFLUENCE;
 								}
@@ -510,15 +524,12 @@ void Simulate()
 	}
 
 	State.simulationStep++;
-	State.timeSinceLastDisaster++;
+	State.timeToNextDisaster--;
 
-	if (State.timeSinceLastDisaster > MIN_FRAMES_BETWEEN_DISASTER)
+	if (State.timeToNextDisaster == 0)
 	{
-		if ((GetRand() & 0xff) == 1)
-		{
-			State.timeSinceLastDisaster = 0;
-			StartRandomFire();
-		}
+		StartRandomFire();
+		State.timeToNextDisaster = (GetRand() % (MAX_TIME_BETWEEN_DISASTERS - MIN_TIME_BETWEEN_DISASTERS)) + MIN_TIME_BETWEEN_DISASTERS;
 	}
 }
 
@@ -534,6 +545,9 @@ bool StartRandomFire()
 			State.buildings[index].onFire = 1;
 			RefreshBuildingTiles(&State.buildings[index]);
 			FocusTile(State.buildings[index].x + 1, State.buildings[index].y + 1);
+
+			UIState.state = InGameDisaster;
+			UIState.selection = DISASTER_MESSAGE_DISPLAY_TIME;
 			return true;
 		}
 		attemptsLeft--;

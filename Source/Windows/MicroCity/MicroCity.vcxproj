@@ -21,7 +21,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{81269073-28D8-47D3-97FB-12F08DE2C936}</ProjectGuid>
     <RootNamespace>MicroCity</RootNamespace>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -126,6 +126,7 @@
     <ClCompile Include="..\..\MicroCity\Strings.cpp" />
     <ClCompile Include="..\..\MicroCity\Terrain.cpp" />
     <ClCompile Include="lodepng.cpp" />
+    <ClCompile Include="WinDebug.cpp" />
     <ClCompile Include="WinMain.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -145,6 +146,7 @@
     <ClInclude Include="..\..\MicroCity\Terrain3.inc.h" />
     <ClInclude Include="..\..\MicroCity\TileData.h" />
     <ClInclude Include="lodepng.h" />
+    <ClInclude Include="WinDebug.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

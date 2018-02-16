@@ -21,9 +21,6 @@ typedef struct
 	uint8_t connectionMap[MAP_WIDTH * MAP_HEIGHT / 4];
 
 	uint8_t terrainType;
-
-	Building buildings[MAX_BUILDINGS];
-
 	uint8_t taxRate;
 
 	uint16_t residentialPopulation;
@@ -35,7 +32,9 @@ typedef struct
 	uint8_t fireBudget;
 	uint16_t roadBudget;
 
-	uint16_t timeSinceLastDisaster;
+	uint16_t timeToNextDisaster;
+
+	Building buildings[MAX_BUILDINGS];
 } GameState;
 
 extern GameState State;
