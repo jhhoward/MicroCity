@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 2,
+  "title": "MicroCity",
+  "description": "MicroCity is a city simulation game inspired by SimCity",
+  "author": "James Howard",
+  "version": "1.1",
+  "date": "2018-02-22",
+  "genre": "Misc",
+  "publisher": "",
+  "idea": "",
+  "code": "",
+  "art": "",
+  "sound": "",
+  "url": "https://github.com/jhhoward/MicroCity",
+  "sourceUrl": "https://github.com/jhhoward/MicroCity",
+  "email": "",
+  "companion": "",
+  "banner": "banner.png",
+  "screenshots": [
+    {
+      "title": "",
+      "filename": "screen1.png"
+    },
+    {
+      "title": "",
+      "filename": "screen2.png"
+    }
+  ],
+  "binaries": [
+    {
+      "title": "MicroCity",
+      "filename": "MicroCity.hex",
+      "device": "Arduboy"
+    }
+  ],
+  "buttons": [
+    {
+      "control": "",
+      "action": ""
+    }
+  ],
+  "eeprom": {
+    "variable": false,
+    "start": 16,
+    "end": 1023
+  }
+}
