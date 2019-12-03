@@ -5,17 +5,6 @@
 void PowerFloodFill(uint8_t x, uint8_t y);
 uint8_t* GetPowerGrid();
 
-#ifdef _WIN32
-// A 1 bit per tile representation of which tiles are powered
-inline uint8_t* GetPowerGrid()
-{
-	// TODO: if arduboy then reuse the screen buffer memory
-	static uint8_t PowerGrid[DISPLAY_WIDTH * DISPLAY_HEIGHT / 8];
-
-	return PowerGrid;
-}
-#endif
-
 uint8_t GetConnections(int x, int y)
 {
 	if (x >= 0 && x < MAP_WIDTH && y >= 0 && y < MAP_HEIGHT)
@@ -445,15 +434,7 @@ void PowerFloodFill(uint8_t x, uint8_t y)
 void PowerFloodFill(uint8_t x, uint8_t y)
 {
 	uint8_t* grid = (uint8_t*)GetPowerGrid();
-	uint8_t* ptr = grid;
-	int count = MAP_WIDTH * MAP_HEIGHT / 8;
-
-	while (count--)
-	{
-		*ptr++ = 0;
-	}
-
-	uint8_t* stackPtr = ptr;
+	uint8_t* stackPtr = grid;
 	uint8_t stackSize = 0;
 
 	STACK_PUSH(x, y);

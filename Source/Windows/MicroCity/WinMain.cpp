@@ -106,6 +106,11 @@ uint8_t GetInput()
 	return InputMask;
 }
 
+uint8_t* GetPowerGrid()
+{
+	static uint8_t PowerGrid[DISPLAY_WIDTH * DISPLAY_HEIGHT / 8];
+	return PowerGrid;
+}
 
 int main(int argc, char* argv[])
 {
