@@ -434,7 +434,7 @@ void PowerFloodFill(uint8_t x, uint8_t y)
 void PowerFloodFill(uint8_t x, uint8_t y)
 {
 	uint8_t* grid = (uint8_t*)GetPowerGrid();
-	uint8_t* stackPtr = grid;
+	uint8_t* stackPtr = grid + (MAP_WIDTH * MAP_HEIGHT / 8);
 	uint8_t stackSize = 0;
 
 	STACK_PUSH(x, y);
